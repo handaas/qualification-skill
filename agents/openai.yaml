@@ -1,0 +1,4 @@
+interface:
+  display_name: "资质大数据报告"
+  short_description: "基于 HandaaS 资质大数据 MCP，生成资质证书概况 / 荣誉资质 / 企业资质 / 行政许可 / 高新技术企业认证的专业 HTML / Markdown / JSON 报告。"
+  default_prompt: "使用 $qualification-report 生成「企业名称」的资质大数据报告：自动补全企业全称，调用资质 MCP 工具，产出 HTML + Markdown + JSON 三件套。"
