@@ -8,7 +8,7 @@
 ## 通用约定
 
 - `keywordType` 枚举：`name`（企业名称）/ `nameId`（企业 id）/ `regNumber`（注册号）/ `socialCreditCode`（统一社会信用代码）。
-- 分页：`pageIndex` 从 1 开始；`enterprise_qualifications` / `administrative_licenses` 的 `pageSize` 最多 10，`hitech_enterprise_cert` 的 `pageSize` 最多 50。
+- 分页：`pageIndex` 从 1 开始；`enterprise_qualifications` 的 `pageSize` 最多 10；`administrative_licenses` / `hitech_enterprise_cert` 的 `pageSize` 最多 50。这三个明细接口按显式页数预算采集（CLI `--max-pages`，默认 1 页；首屏同时作报告数据与 total 发现，不重复请求）；证书概况与荣誉资质接口不支持 pageIndex（单次调用），关键词模糊查询仅用于主体确认、不分页遍历。
 
 ---
 

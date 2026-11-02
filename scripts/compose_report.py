@@ -22,10 +22,9 @@ import argparse
 import datetime as dt
 import json
 import pathlib
-import sys
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, Dict, List, Mapping, Optional, Sequence
 
-from common import REPORT_BANNER, REPORT_TYPE, json_dumps, load_json_file, print_json
+from common import REPORT_BANNER, REPORT_TYPE, attach_pagination, call_tool_once, collect_detail_pages, paid_call_scope, json_dumps, load_json_file, print_json
 import mcp_client
 from render_report import render_html, render_markdown, html_to_pdf
 
@@ -45,43 +44,77 @@ T_HITECH = "qualification_bigdata_hitech_enterprise_cert"
 # --------------------------------------------------------------------------- #
 
 
+
+
+def _is_empty_signal(value: Any) -> bool:
+    """Recognize documented no-data text without classifying it as an API failure."""
+    if not isinstance(value, str):
+        return False
+    text = value.strip()
+    return bool(text) and any(token in text for token in (
+        "查询数据为空", "暂无数据", "未查询到", "未检索到", "查询结果为空",
+    ))
+
 def _is_api_error(value: Any) -> bool:
-    """Detect MCP API error responses (not empty data, but actual failures like 405)."""
+    """Recognize failures without treating a documented empty result as an error."""
     if value is None:
         return False
     if isinstance(value, str):
-        return any(s in value for s in ("接口调用失败", "查询失败", "状态码：4", "状态码：5"))
-    if isinstance(value, dict):
-        for v in value.values():
-            if isinstance(v, str) and any(s in v for s in ("接口调用失败", "查询失败", "状态码：4", "状态码：5")):
-                return True
-    return False
+        text = value.strip()
+        if any(s in text for s in ("查询数据为空", "暂无数据", "未查询到", "未检索到")):
+            return False
+        return any(s in text for s in (
+            "接口调用失败", "查询失败", "Error executing tool", "validation error",
+            "状态码：4", "状态码：5", "密钥错误", "签名错误", "未配置",
+        ))
+    if not isinstance(value, dict):
+        return False
+    if value.get("isError") is True or value.get("success") is False:
+        return True
+    if value.get("_error") or value.get("error") or value.get("error_message"):
+        return True
+    if "code" in value and value.get("code") not in (None, 0, 200, "0", "200", "SUCCESS", "success"):
+        return True
+    if set(value) == {"text"} and value.get("text"):
+        return not any(s in str(value["text"]) for s in ("查询数据为空", "暂无数据", "未查询到", "未检索到"))
+    return any(_is_api_error(v) for v in value.values() if isinstance(v, (dict, str)))
+
 
 def _first_list(value: Any) -> List[Any]:
+    if _is_api_error(value):
+        return []
     if isinstance(value, list):
         return value
     if isinstance(value, dict):
-        if _is_api_error(value):
-            return []
-        for key in ("resultList", "list", "items", "data"):
+        for key in ("resultList", "list", "items", "records", "data"):
             if isinstance(value.get(key), list):
                 return value[key]
-    if value in (None, "", {}):
-        return []
-    return [value]
+    return []
 
 
 def _first_record(value: Any) -> Dict[str, Any]:
     for record in _first_list(value):
-        if isinstance(record, dict):
+        if isinstance(record, dict) and _has_evidence(record):
             return record
-    if isinstance(value, dict):
+    if isinstance(value, dict) and not _is_api_error(value) and _has_evidence(value):
         return value
     return {}
 
 
+def _has_evidence(value: Any) -> bool:
+    if value is None or value in ("", "-") or _is_empty_signal(value):
+        return False
+    if _is_api_error(value):
+        return False
+    if isinstance(value, dict):
+        return any(_has_evidence(v) for k, v in value.items() if k not in {"sections", "_raw"})
+    if isinstance(value, list):
+        return any(_has_evidence(v) for v in value)
+    return True
+
+
 def _text(value: Any, limit: int = 0) -> str:
-    if value is None:
+    if value is None or _is_empty_signal(value):
         return ""
     if isinstance(value, (dict, list)):
         t = json.dumps(value, ensure_ascii=False)
@@ -102,7 +135,7 @@ def _int(value: Any) -> Optional[int]:
 
 def _safe_call(tool: str, arguments: Dict[str, Any]) -> Any:
     try:
-        result = mcp_client.call_tool(tool, arguments)
+        result = call_tool_once(mcp_client.call_tool, tool, arguments)
         # Detect API error responses (405, etc.) and return error marker
         if _is_api_error(result):
             return {"_error": "API错误", "_raw": result}
@@ -117,6 +150,18 @@ def _safe_total(payload: Any) -> Any:
             return None
         return payload.get("total")
     return None
+
+
+def _collect_detail_pages(tool: str, arguments: Dict[str, Any], max_pages: int) -> Dict[str, Any]:
+    """Total-driven detail collection within an explicit paid-page budget (default 1 page).
+
+    The first paid page serves both as report data and as total discovery; it is
+    never refetched. Additional pages are only requested inside the budget.
+    """
+    return collect_detail_pages(
+        _safe_call, tool, dict(arguments), get_rows=_first_list, get_total=_safe_total,
+        is_error=_is_api_error, max_pages=max_pages,
+    )
 
 
 def _concentration(rows: List[Mapping[str, Any]], name_key: str, value_key: str, top_n: int = 3) -> Dict[str, Any]:
@@ -147,10 +192,13 @@ def resolve_enterprise_name(raw: str) -> Dict[str, Any]:
         return {"keyword": raw, "enterprise": raw, "resolved": True, "reason": "视为企业全称"}
     fuzzy = _safe_call(T_FUZZY, {"matchKeyword": raw, "pageSize": 1})
     record = _first_record(fuzzy)
+    total = _int(_safe_total(fuzzy))
     name = str(record.get("name") or "").strip()
-    if name:
-        return {"keyword": raw, "enterprise": name, "resolved": True, "reason": "由关键词模糊查询补全", "fuzzy_total": _int(_safe_total(fuzzy)), "record": record}
-    return {"keyword": raw, "enterprise": raw, "resolved": False, "reason": "模糊查询未命中企业全称，按关键词直查"}
+    if name and total == 1:
+        return {"keyword": raw, "enterprise": name, "resolved": True, "reason": "模糊查询唯一候选补全", "fuzzy_total": total, "record": record, "fuzzy_requested": True}
+    if name and total and total > 1:
+        return {"keyword": raw, "enterprise": raw, "resolved": False, "reason": f"模糊查询返回 {total} 个候选，未静默采用首条", "fuzzy_total": total, "fuzzy_requested": True}
+    return {"keyword": raw, "enterprise": raw, "resolved": False, "reason": "模糊查询未命中唯一企业全称，按原始关键词查询", "fuzzy_requested": True}
 
 
 # --------------------------------------------------------------------------- #
@@ -211,9 +259,6 @@ def _enrich_metrics_with_profile(metrics: List[Dict[str, Any]], record: Any) -> 
 def _derive_core_metrics(metrics: List[Dict[str, Any]], core: Mapping[str, Any]) -> List[Dict[str, Any]]:
     """Derive additional metrics from core analysis sections."""
     cat_dist = core.get("category_dist", []) if isinstance(core, dict) else []
-    honors = core.get("honor_records", []) if isinstance(core, dict) else []
-    licenses = core.get("license_records", []) if isinstance(core, dict) else []
-    hitech = core.get("hitech_records", []) if isinstance(core, dict) else []
     year_trend = core.get("cert_year_trend", []) if isinstance(core, dict) else []
     cert_profile = core.get("cert_profile", {}) if isinstance(core, dict) else {}
     if isinstance(cat_dist, list) and cat_dist:
@@ -239,10 +284,42 @@ def build_subject(raw: str, resolved: Mapping[str, Any], keyword_type: str) -> D
         "match_raw": raw,
         "resolved": bool(resolved.get("resolved")),
         "resolve_reason": resolved.get("reason", ""),
+        "fuzzy_total": resolved.get("fuzzy_total"),
+        "requires_confirmation": bool((resolved.get("fuzzy_total") or 0) > 1),
+        "fuzzy_requested": bool(resolved.get("fuzzy_requested")),
     }
 
 
-def build_metrics(profile: Mapping[str, Any], honor: Any, enterprise: Any, license_p: Any, hitech: Any, core: Mapping[str, Any] = None) -> List[Dict[str, Any]]:
+def requested_products(subject: Mapping[str, Any]) -> List[Dict[str, str]]:
+    products: List[Dict[str, str]] = []
+    if subject.get("fuzzy_requested"):
+        products.append({"name": "企业模糊查询", "product_id": "675cea1f0e009a9ea37edaa1"})
+    if not subject.get("requires_confirmation"):
+        products.extend([
+            {"name": "资质证书概况", "product_id": "66a24df68912d491d34ab0a1"},
+            {"name": "荣誉资质", "product_id": "66b71b498dd25dbfbe8b0a9f"},
+            {"name": "企业资质", "product_id": "67f3b410ac893a1d33dadef5"},
+            {"name": "行政许可", "product_id": "669fb610a32fff27615b0c03"},
+            {"name": "高新技术企业认证", "product_id": "669f8ec259dda752d9799950"},
+        ])
+    return products
+
+
+def _known_count(payload: Any) -> Optional[int]:
+    """Return a count only when the response supplies countable evidence."""
+    if _is_api_error(payload):
+        return None
+    total = _safe_total(payload)
+    parsed = _int(total)
+    if parsed is not None:
+        return parsed
+    if isinstance(payload, list):
+        return len(payload)
+    rows = _first_list(payload)
+    return len(rows) if rows else None
+
+
+def build_metrics(profile: Mapping[str, Any], honor: Any, enterprise: Any, license_p: Any, hitech: Any, core: Optional[Mapping[str, Any]] = None) -> List[Dict[str, Any]]:
     metrics: List[Dict[str, Any]] = []
     core = core or {}
     p = profile if isinstance(profile, dict) else {}
@@ -254,10 +331,15 @@ def build_metrics(profile: Mapping[str, Any], honor: Any, enterprise: Any, licen
         metrics.append({"label": "近一年获证", "value": _text(p.get("certNumberThisYear")) or "-", "hint": "最近一年获证数量", "delta": f"占总量 {share:.0f}%"})
     else:
         metrics.append({"label": "近一年获证", "value": _text(p.get("certNumberThisYear")) or "-", "hint": "最近一年获证数量"})
-    metrics.append({"label": "荣誉资质", "value": str(_safe_total(honor) or len(_first_list(honor))) + " 条", "hint": "荣誉资质条数"})
-    metrics.append({"label": "企业资质", "value": str(_safe_total(enterprise) or len(_first_list(enterprise))) + " 条", "hint": "企业资质条数"})
-    metrics.append({"label": "行政许可", "value": str(_safe_total(license_p) or len(_first_list(license_p))) + " 条", "hint": "行政许可条数"})
-    metrics.append({"label": "高新技术企业认证", "value": str(_safe_total(hitech) or len(_first_list(hitech))) + " 条", "hint": "高新技术企业认证条数"})
+    for label, payload, hint in (
+        ("荣誉资质", honor, "荣誉资质条数"),
+        ("企业资质", enterprise, "企业资质条数"),
+        ("行政许可", license_p, "行政许可条数"),
+        ("高新技术企业认证", hitech, "高新技术企业认证条数"),
+    ):
+        count = _known_count(payload)
+        if count is not None:
+            metrics.append({"label": label, "value": f"{count} 条", "hint": hint})
     # 资质类别聚类数 & 高新技术领域覆盖数（来自 enterprise 资质）
     class_rows = core.get("class_cluster") or []
     if class_rows:
@@ -269,11 +351,15 @@ def build_metrics(profile: Mapping[str, Any], honor: Any, enterprise: Any, licen
 
 
 def build_caliber(subject: Mapping[str, Any]) -> Dict[str, Any]:
+    products = [item["name"] for item in requested_products(subject)]
+    data_scope = "资质证书概况、荣誉资质、企业资质、行政许可、高新技术企业认证、资质类别聚类、高新技术领域覆盖、获证年度趋势"
+    if products == ["企业模糊查询"]:
+        data_scope = "仅执行企业模糊查询；主体未唯一确认，未调用资质业务产品"
     return {
         "match_target": subject.get("enterprise") or subject.get("match_raw"),
         "match_type": f"资质大数据按企业主体匹配（keywordType={subject.get('keywordType', 'name')}）",
-        "data_scope": "资质证书概况、荣誉资质、企业资质、行政许可、高新技术企业认证、资质类别聚类、高新技术领域覆盖、获证年度趋势",
-        "products": ["资质证书概况", "荣誉资质", "企业资质", "行政许可", "高新技术企业认证"],
+        "data_scope": data_scope,
+        "products": products,
         "limit": "数据来自资质公开数据库；少量字段可能存在更新延迟。",
     }
 
@@ -301,6 +387,11 @@ def build_core_analysis(profile: Any, honor: Any, enterprise: Any, license_p: An
     class_cluster_rows = _class_cluster_rows(enterprise)
     hitech_industry_rows = _hitech_industry_rows(enterprise)
     cert_year_rows = _cert_year_rows(enterprise)
+
+    def page_note(payload: Any, rows: Sequence[Mapping[str, Any]]) -> str:
+        total = _safe_total(payload)
+        total_text = total if total is not None else len(rows)
+        return f"共 {total_text} 条，本次采集 {len(rows)} 条"
 
     # 资质类别分布（按荣誉/企业资质/行政许可/高新聚合条数）
     category_rows: List[Dict[str, Any]] = []
@@ -334,13 +425,16 @@ def build_core_analysis(profile: Any, honor: Any, enterprise: Any, license_p: An
         {"key": "cert_year_trend", "title": "获证年度趋势", "kind": "line", "note": "按 publishYear 统计企业资质获证数量",
          "chart": {"x": "年份", "y": "数量", "area": True},
          "columns": [("年份", "年份"), ("数量", "数量")]},
-        {"key": "honor_records", "title": "荣誉资质", "kind": "table", "note": f"共 {_safe_total(honor) or len(honor_rows)} 条，展示前若干条",
+        {"key": "honor_records", "title": "荣誉资质", "kind": "table", "note": page_note(honor, honor_rows),
          "columns": [("资质类型", "资质类型"), ("资质级别", "资质级别"), ("认定机关", "认定机关"), ("发布日期", "发布日期"), ("有效期", "有效期")]},
-        {"key": "enterprise_records", "title": "企业资质", "kind": "table", "note": f"共 {_safe_total(enterprise) or len(enterprise_rows)} 条，展示前 N 条",
+        {"key": "enterprise_records", "title": "企业资质", "kind": "table", "note": (
+            f"上游总量 {_safe_total(enterprise) if _safe_total(enterprise) is not None else len(enterprise_rows)} 条，"
+            f"本次采集去重展示 {len(enterprise_rows)} 条"
+        ),
          "columns": [("资质类型", "资质类型"), ("资质类别聚类", "资质类别聚类"), ("资质级别", "资质级别"), ("发布单位", "发布单位"), ("发布日期", "发布日期"), ("获证年度", "获证年度")]},
-        {"key": "license_records", "title": "行政许可", "kind": "table", "note": f"共 {_safe_total(license_p) or len(license_rows)} 条，展示前 N 条",
-         "columns": [("许可事项", "许可事项"), ("许可机关", "许可机关"), ("当前状态", "当前状态"), ("有效期自", "有效期自"), ("有效期至", "有效期至")]},
-        {"key": "hitech_records", "title": "高新技术企业认证", "kind": "table", "note": f"共 {_safe_total(hitech) or len(hitech_rows)} 条，展示前 {len(hitech_rows)} 条",
+        {"key": "license_records", "title": "行政许可", "kind": "table", "note": page_note(license_p, license_rows),
+         "columns": [("许可事项", "许可事项"), ("决定文书号", "决定文书号"), ("许可机关", "许可机关"), ("当前状态", "当前状态"), ("有效期自", "有效期自"), ("有效期至", "有效期至")]},
+        {"key": "hitech_records", "title": "高新技术企业认证", "kind": "table", "note": page_note(hitech, hitech_rows),
          "columns": [("证书编号", "证书编号"), ("资质类别", "资质类别"), ("发证机构", "发证机构"), ("颁证日期", "颁证日期"), ("截止日期", "截止日期"), ("证书状态", "证书状态")]},
     ]
 
@@ -361,7 +455,7 @@ def build_core_analysis(profile: Any, honor: Any, enterprise: Any, license_p: An
 def _build_honor_rows(honor: Any) -> List[Dict[str, Any]]:
     rows = []
     for item in _first_list(honor):
-        if not isinstance(item, dict):
+        if not isinstance(item, dict) or not _has_evidence(item):
             continue
         valid = "、".join([d for d in (_text(item.get("eaqBeginDate")), _text(item.get("eaqEndDate"))) if d]) or "-"
         rows.append({
@@ -374,20 +468,37 @@ def _build_honor_rows(honor: Any) -> List[Dict[str, Any]]:
     return rows
 
 
-def _build_enterprise_rows(enterprise: Any) -> List[Dict[str, Any]]:
-    rows = []
+def _enterprise_display_row(item: Mapping[str, Any]) -> Dict[str, Any]:
+    return {
+        "资质类型": _text(item.get("qualificationType")) or "-",
+        "资质类别聚类": _text(item.get("qualificationClasses")) or "-",
+        "资质级别": _text(item.get("qualificationLevel")) or "-",
+        "发布单位": _text(item.get("agency")) or "-",
+        "发布日期": _text(item.get("publishDate")) or "-",
+        "获证年度": _text(item.get("publishYear")) or "-",
+    }
+
+
+def _unique_enterprise_items(enterprise: Any) -> List[Dict[str, Any]]:
+    """Drop only structurally identical upstream records, preserving all distinctions."""
+    unique: List[Dict[str, Any]] = []
+    seen: set[str] = set()
     for item in _first_list(enterprise):
-        if not isinstance(item, dict):
+        if not isinstance(item, dict) or not _has_evidence(item):
             continue
-        rows.append({
-            "资质类型": _text(item.get("qualificationType")) or "-",
-            "资质类别聚类": _text(item.get("qualificationClasses")) or "-",
-            "资质级别": _text(item.get("qualificationLevel")) or "-",
-            "发布单位": _text(item.get("agency")) or "-",
-            "发布日期": _text(item.get("publishDate")) or "-",
-            "获证年度": _text(item.get("publishYear")) or "-",
-        })
-    return rows
+        # MCP payloads are JSON-shaped. Canonicalizing the complete raw mapping means
+        # IDs, dates, non-rendered fields and derived-analysis inputs all participate;
+        # no guessed identifier is treated as uniquely authoritative.
+        key = json.dumps(item, ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(item)
+    return unique
+
+
+def _build_enterprise_rows(enterprise: Any) -> List[Dict[str, Any]]:
+    return [_enterprise_display_row(item) for item in _unique_enterprise_items(enterprise)]
 
 
 def _class_cluster_rows(enterprise: Any) -> List[Dict[str, Any]]:
@@ -396,9 +507,7 @@ def _class_cluster_rows(enterprise: Any) -> List[Dict[str, Any]]:
     qualificationClasses e.g. '科技研发与创新类' / '产业升级与转型类'.
     """
     counter: Dict[str, int] = {}
-    for item in _first_list(enterprise):
-        if not isinstance(item, dict):
-            continue
+    for item in _unique_enterprise_items(enterprise):
         cls = _text(item.get("qualificationClasses"))
         if cls:
             counter[cls] = counter.get(cls, 0) + 1
@@ -412,9 +521,7 @@ def _hitech_industry_rows(enterprise: Any) -> List[Dict[str, Any]]:
     '新能源与节能','先进制造与自动化'].
     """
     counter: Dict[str, int] = {}
-    for item in _first_list(enterprise):
-        if not isinstance(item, dict):
-            continue
+    for item in _unique_enterprise_items(enterprise):
         for ind in (item.get("highTechIndustryList") or []):
             ind = _text(ind)
             if ind:
@@ -425,9 +532,7 @@ def _hitech_industry_rows(enterprise: Any) -> List[Dict[str, Any]]:
 def _cert_year_rows(enterprise: Any) -> List[Dict[str, Any]]:
     """获证年度趋势 line: aggregate publishYear across enterprise quals."""
     counter: Dict[str, int] = {}
-    for item in _first_list(enterprise):
-        if not isinstance(item, dict):
-            continue
+    for item in _unique_enterprise_items(enterprise):
         year = item.get("publishYear")
         if year is None:
             continue
@@ -439,23 +544,30 @@ def _cert_year_rows(enterprise: Any) -> List[Dict[str, Any]]:
 
 def _build_license_rows(license_p: Any) -> List[Dict[str, Any]]:
     rows = []
+    seen = set()
     for item in _first_list(license_p):
-        if not isinstance(item, dict):
+        if not isinstance(item, dict) or not _has_evidence(item):
             continue
-        rows.append({
+        row = {
             "许可事项": _text(item.get("fileName")) or _text(item.get("content")) or "-",
+            "决定文书号": _text(item.get("creditPubLicenseId")) or "-",
             "许可机关": _text(item.get("authority")) or "-",
             "当前状态": _text(item.get("status")) or "-",
             "有效期自": _text(item.get("beginDate")) or "-",
             "有效期至": _text(item.get("endDate")) or "-",
-        })
+        }
+        stable_key = tuple(row[k] for k in ("许可事项", "决定文书号", "许可机关", "当前状态", "有效期自", "有效期至"))
+        if stable_key in seen:
+            continue
+        seen.add(stable_key)
+        rows.append(row)
     return rows
 
 
 def _build_hitech_rows(hitech: Any) -> List[Dict[str, Any]]:
     rows = []
     for item in _first_list(hitech):
-        if not isinstance(item, dict):
+        if not isinstance(item, dict) or not _has_evidence(item):
             continue
         rows.append({
             "证书编号": _text(item.get("certId")) or "-",
@@ -486,7 +598,7 @@ def build_records(core: Mapping[str, Any]) -> List[Dict[str, Any]]:
     return out[:20]
 
 
-def build_insights(subject: Mapping[str, Any], core: Mapping[str, Any], metrics: List[Mapping[str, Any]]) -> List[Dict[str, Any]]:
+def build_insights(subject: Mapping[str, Any], core: Mapping[str, Any], metrics: Sequence[Mapping[str, Any]]) -> List[Dict[str, Any]]:
     insights: List[Dict[str, Any]] = []
     metric_map = {m["label"]: str(m["value"]) for m in metrics}
     cert_total = metric_map.get("证书总数")
@@ -497,7 +609,7 @@ def build_insights(subject: Mapping[str, Any], core: Mapping[str, Any], metrics:
         insights.append({
             "feature": "资质资产规模",
             "evidence": f"企业资质证书总数 {cert_total}。",
-            "interpretation": "证书总量反映企业资质积累的广度，是招投标、政策申报与商业合作的重要门槛指标。",
+            "interpretation": "该值仅描述上游返回的证书总量，不单独证明业务能力、投标资格或合作适配性。",
         })
     if recent and cert_total:
         try:
@@ -505,17 +617,17 @@ def build_insights(subject: Mapping[str, Any], core: Mapping[str, Any], metrics:
             c = float(cert_total)
             share = r / c * 100 if c else 0
             insights.append({
-                "feature": "近期获证活跃度",
+                "feature": "近期获证观察",
                 "evidence": f"近一年获证 {recent} 项，占证书总量约 {share:.0f}%。",
-                "interpretation": "近期获证占比反映资质扩张节奏：占比高说明企业处于资质快速积累期（如新业务/新政策驱动），占比低则资质结构趋于稳定。",
+                "interpretation": "“近一年”沿用上游字段口径，当前响应未提供起止日期；该占比仅作数量观察，不推断扩张阶段或稳定程度。",
             })
         except (TypeError, ValueError):
             pass
     if hitech_n and hitech_n != "0":
         insights.append({
             "feature": "高新技术资质",
-            "evidence": f"高新技术企业认证记录 {hitech_n} 条。",
-            "interpretation": "高新技术企业资质是企业研发能力与税收优惠的重要依据；持续在有效期内说明企业研发投入稳定。",
+            "evidence": f"高新技术企业认证记录 {hitech_n}。",
+            "interpretation": "该值仅描述返回的认证记录数；研发情况、优惠适用和认证有效性需核验具体证书及主管部门记录。",
         })
     category_rows = core.get("category_dist") or []
     if category_rows:
@@ -524,7 +636,7 @@ def build_insights(subject: Mapping[str, Any], core: Mapping[str, Any], metrics:
             insights.append({
                 "feature": "资质类别集中度",
                 "evidence": f"“{conc['top']}”类资质占比约 {conc['top_share']:.0f}%，前 2 类合计 {conc['cr']:.0f}%（CR2）。",
-                "interpretation": "资质类别集中度反映业务聚焦方向：CR2 偏高意味着资质集中于少数类别、专业化方向明确；CR2 偏低则代表业务线多元、跨领域布局。",
+                "interpretation": "CR2 仅描述本次返回类别的数量集中程度，不能单独判断业务聚焦、专业化或多元化程度。",
             })
     # 高新证书有效性（基于 hitech_records 的证书状态字段）
     hitech_rows = core.get("hitech_records") or []
@@ -535,7 +647,7 @@ def build_insights(subject: Mapping[str, Any], core: Mapping[str, Any], metrics:
             insights.append({
                 "feature": "高新证书有效性",
                 "evidence": f"高新证书 {total_h} 条中有效 {valid} 条（{valid / total_h * 100:.0f}%）。",
-                "interpretation": "高新证书有效率直接影响企业享受税收优惠与政策红利的连续性；存在过期记录时建议尽快启动重新认定。",
+                "interpretation": "该比例仅按返回记录中的状态文本计算；优惠适用、续期要求和实际效力需以主管部门记录为准。",
             })
     cert_profile = core.get("cert_profile") or {}
     cert_types = cert_profile.get("涵盖证书类别")
@@ -547,7 +659,7 @@ def build_insights(subject: Mapping[str, Any], core: Mapping[str, Any], metrics:
         insights.append({
             "feature": "资质类别覆盖",
             "evidence": f"涵盖证书类别约 {n_types or '多'} 类：{cert_types}。",
-            "interpretation": "资质类别越分散，说明企业业务线越多元；类别集中则代表专业化方向明确。",
+            "interpretation": "类别数量只描述返回证书的分类覆盖，不能单独推断业务线数量或专业化程度。",
         })
     # 资质类别聚类集中度（HIGHEST VALUE — qualificationClasses）
     class_rows = core.get("class_cluster") or []
@@ -558,7 +670,7 @@ def build_insights(subject: Mapping[str, Any], core: Mapping[str, Any], metrics:
             insights.append({
                 "feature": "资质类别聚类",
                 "evidence": f"企业资质按类别聚为 {len(class_rows)} 类，合计 {total_cls} 项；其中“{conc['top']}”占比约 {conc['top_share']:.0f}%，前 2 类合计 {conc['cr']:.0f}%（CR2）。",
-                "interpretation": "资质类别聚类反映企业资质的政策定位：科技研发与创新类占比高通常意味着以技术创新为核心驱动；产业升级与转型类则反映传统产能升级方向。",
+                "interpretation": "聚类及 CR2 仅描述上游 qualificationClasses 的分布，不据此判断政策定位、经营驱动或转型方向。",
             })
     # 高新技术领域覆盖
     hitech_ind_rows = core.get("hitech_industry") or []
@@ -567,7 +679,7 @@ def build_insights(subject: Mapping[str, Any], core: Mapping[str, Any], metrics:
         insights.append({
             "feature": "高新技术领域覆盖",
             "evidence": f"覆盖 {len(hitech_ind_rows)} 个高新技术领域（电子信息/航空航天/高技术服务/新能源与节能/先进制造与自动化等），“{top_field.get('高新技术领域', '-')}”覆盖最多（{top_field.get('覆盖次数', 0)} 次）。",
-            "interpretation": "高新技术领域覆盖广度反映企业的技术辐射面：覆盖多领域通常意味着跨学科技术整合能力强，是综合型高技术企业的典型特征。",
+            "interpretation": "领域数和覆盖次数仅描述 highTechIndustryList 的返回分布，不单独证明技术辐射面或跨领域整合水平。",
         })
     # 获证年度趋势
     year_rows = core.get("cert_year_trend") or []
@@ -578,7 +690,7 @@ def build_insights(subject: Mapping[str, Any], core: Mapping[str, Any], metrics:
             insights.append({
                 "feature": "获证年度趋势",
                 "evidence": f"企业资质获证跨 {len(nums)} 个年度，峰值在“{peak[0]}”（新增 {peak[1]} 项）。",
-                "interpretation": "获证年度趋势反映企业资质建设的投入节奏：某年集中爆发通常对应政策窗口期或重大认证批次；近年新增放缓则可能进入资质维护阶段。",
+                "interpretation": "年度趋势仅按返回记录的 publishYear 汇总；未返回的年份不代表零，峰值也不证明政策、投入或维护阶段变化。",
             })
         except (TypeError, ValueError):
             pass
@@ -591,8 +703,12 @@ def build_insights(subject: Mapping[str, Any], core: Mapping[str, Any], metrics:
     return insights
 
 
-def build_abstract(subject: Mapping[str, Any], core: Mapping[str, Any], metrics: List[Mapping[str, Any]]) -> str:
+def build_abstract(subject: Mapping[str, Any], core: Mapping[str, Any], metrics: Sequence[Mapping[str, Any]]) -> str:
     name = subject.get("enterprise") or subject.get("match_raw") or "目标企业"
+    if subject.get("requires_confirmation"):
+        return f"原始关键词“{subject.get('match_raw') or name}”返回多个候选主体，待人工确认；本报告未调用资质详情，也不形成主体资质结论。"
+    if not metrics and not any(_has_evidence(v) for k, v in core.items() if k != "sections"):
+        return f"本次未获得“{name}”的可用资质证据，核心维度覆盖率为 0；不得据此判断证书、许可或认定情况。"
     parts = [f"本报告以“{name}”为分析对象，基于资质公开数据，系统呈现企业资质证书概况、荣誉资质、企业资质、行政许可与高新技术企业认证明细。"]
     if metrics:
         kv = "、".join(f"{m['label']} {m['value']}" for m in metrics[:5])
@@ -622,7 +738,7 @@ def build_dry_run_payload(raw: str, keyword_type: str) -> Dict[str, Any]:
 # Assembly
 # --------------------------------------------------------------------------- #
 
-def _assemble(subject: Mapping[str, Any], core: Mapping[str, Any], metrics: List[Mapping[str, Any]], *, dry_run: bool) -> Dict[str, Any]:
+def _assemble(subject: Mapping[str, Any], core: Mapping[str, Any], metrics: Sequence[Mapping[str, Any]], *, dry_run: bool) -> Dict[str, Any]:
     abstract = build_abstract(subject, core, metrics)
     records = build_records(core)
     insights = build_insights(subject, core, metrics)
@@ -631,10 +747,10 @@ def _assemble(subject: Mapping[str, Any], core: Mapping[str, Any], metrics: List
     secs = ca.get("sections", [])
     if secs:
         total_secs = len(secs)
-        populated = sum(1 for s in secs if isinstance(s, dict) and ca.get(s.get("key")) not in (None, "", [], {}))
+        populated = sum(1 for s in secs if isinstance(s, dict) and _has_evidence(ca.get(s.get("key"))))
     else:
         total_secs = max(1, len([k for k in ca if k != "sections"]))
-        populated = sum(1 for k in ca if k != "sections" and ca.get(k) not in (None, "", [], {}))
+        populated = sum(1 for k in ca if k != "sections" and _has_evidence(ca.get(k)))
     quality_report = {
         "total_sections": total_secs,
         "populated_sections": populated,
@@ -660,14 +776,7 @@ def _assemble(subject: Mapping[str, Any], core: Mapping[str, Any], metrics: List
         "insights": insights,
         "data_source": {
             "mcp_server": "qualification-mcp-server",
-            "products": [
-                {"name": "荣誉资质", "product_id": "66b71b498dd25dbfbe8b0a9f"},
-                {"name": "企业资质", "product_id": "67f3b410ac893a1d33dadef5"},
-                {"name": "企业模糊查询", "product_id": "675cea1f0e009a9ea37edaa1"},
-                {"name": "行政许可", "product_id": "669fb610a32fff27615b0c03"},
-                {"name": "资质证书概况", "product_id": "66a24df68912d491d34ab0a1"},
-                {"name": "高新技术企业认证", "product_id": "669f8ec259dda752d9799950"},
-            ],
+            "products": requested_products(subject),
             "generated_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
             "dry_run": dry_run,
             "quality_report": quality_report,
@@ -675,15 +784,23 @@ def _assemble(subject: Mapping[str, Any], core: Mapping[str, Any], metrics: List
     }
 
 
-def build_payload(raw: str, keyword_type: str, page_size: int) -> Dict[str, Any]:
+@paid_call_scope
+def build_payload(raw: str, keyword_type: str, page_size: int, max_pages: Optional[int] = 1) -> Dict[str, Any]:
+    if isinstance(max_pages, bool) or not isinstance(max_pages, int) or max_pages < 1:
+        raise ValueError("max_pages 必须为正整数")
     resolved = resolve_enterprise_name(raw)
+    if (resolved.get("fuzzy_total") or 0) > 1:
+        subject = build_subject(raw, resolved, keyword_type)
+        core = build_core_analysis({}, {}, {}, {}, {})
+        return _assemble(subject, core, [], dry_run=False)
     enterprise = resolved["enterprise"]
     mk_args: Dict[str, Any] = {"matchKeyword": enterprise, "keywordType": keyword_type}
     profile = _safe_call(T_PROFILE, mk_args)
     honor = _safe_call(T_HONOR, mk_args)
-    enterprise_q = _safe_call(T_ENTERPRISE, {**mk_args, "pageIndex": 1, "pageSize": page_size})
-    license_p = _safe_call(T_LICENSE, {**mk_args, "pageIndex": 1, "pageSize": page_size})
-    hitech = _safe_call(T_HITECH, {**mk_args, "pageIndex": 1, "pageSize": page_size})
+    # 分页类明细接口：按各自 schema 上限取页大小；企业资质单页最多 10，行政许可 / 高新认证单页最多 50。
+    enterprise_q = _collect_detail_pages(T_ENTERPRISE, {**mk_args, "pageIndex": 1, "pageSize": min(page_size, 10)}, max_pages)
+    license_p = _collect_detail_pages(T_LICENSE, {**mk_args, "pageIndex": 1, "pageSize": page_size}, max_pages)
+    hitech = _collect_detail_pages(T_HITECH, {**mk_args, "pageIndex": 1, "pageSize": page_size}, max_pages)
 
     subject = build_subject(raw, resolved, keyword_type)
     core = build_core_analysis(profile, honor, enterprise_q, license_p, hitech)
@@ -694,7 +811,8 @@ def build_payload(raw: str, keyword_type: str, page_size: int) -> Dict[str, Any]
     _derive_core_metrics(metrics, core if isinstance(core, dict) else {})
     # --- Enterprise profile enrichment (from fuzzy_search) ---
     _enrich_metrics_with_profile(metrics, resolved.get("record") if isinstance(resolved, dict) else None)
-    return _assemble(subject, core, metrics, dry_run=False)
+    report = _assemble(subject, core, metrics, dry_run=False)
+    return attach_pagination(report, {"企业资质": enterprise_q, "行政许可": license_p, "高新技术企业认证": hitech})
 
 
 # --------------------------------------------------------------------------- #
@@ -705,17 +823,22 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Compose a qualification big-data report via the qualification MCP.")
     parser.add_argument("--enterprise", required=True, help="企业全称或关键词（关键词将自动模糊补全）")
     parser.add_argument("--keyword-type", default="name", help="主体类型：name/nameId/regNumber/socialCreditCode")
-    parser.add_argument("--page-size", type=int, default=10, help="分页大小（最多 50）")
+    parser.add_argument("--page-size", type=int, default=10, help="分页大小（企业资质最多 10；行政许可 / 高新认证最多 50）")
+    parser.add_argument("--max-pages", type=int, default=1, help="分页明细接口最多查询页数（正整数，默认 1 页；按报告结论需要先计划预算再显式扩大）")
     parser.add_argument("--dry-run", action="store_true", help="不调用真实 MCP，使用样例数据组装报告骨架")
     parser.add_argument("--output", help="输出 JSON 路径；省略则打印到 stdout")
     parser.add_argument("--report-output", help="同时输出 HTML 报告（.html）与 Markdown 报告（.md）")
     parser.add_argument("--pdf-output", help="额外输出 PDF 报告（.pdf）；需要 Playwright + Chromium")
     args = parser.parse_args()
 
+    if not 1 <= args.page_size <= 50:
+        parser.error("--page-size 必须在 1 到 50 之间")
+    if args.max_pages < 1:
+        parser.error("--max-pages 必须为正整数")
     if args.dry_run:
         payload = build_dry_run_payload(args.enterprise, args.keyword_type)
     else:
-        payload = build_payload(args.enterprise, args.keyword_type, args.page_size)
+        payload = build_payload(args.enterprise, args.keyword_type, args.page_size, args.max_pages)
 
     if args.output:
         out = pathlib.Path(args.output).expanduser()
