@@ -1,0 +1,159 @@
+[
+  {
+    "tool": "qualification_bigdata_qualification_certificate_profile",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "贵州茅台酒股份有限公司",
+      "keywordType": "name"
+    },
+    "invocation_id": "1793070081475328000",
+    "elapsed_seconds": 1.111,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "certFirstPublishTime",
+      "certLastPublishTime",
+      "certNumberThisYear",
+      "certTypeList",
+      "certificateCount"
+    ],
+    "row_count": null,
+    "reported_total": null,
+    "numeric_evidence": [
+      {
+        "path": "certNumberThisYear",
+        "value": 8
+      },
+      {
+        "path": "certificateCount",
+        "value": 66
+      }
+    ],
+    "response_sha256": "ef304f71e6859f5af142ca5ef954fe13b3dc64bfc825df0f25f4cad77540dd61"
+  },
+  {
+    "tool": "qualification_bigdata_honor_qualifications",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "贵州茅台酒股份有限公司",
+      "keywordType": "name"
+    },
+    "invocation_id": "1793070081475328000",
+    "elapsed_seconds": 1.239,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "resultList",
+      "total"
+    ],
+    "row_count": 3,
+    "reported_total": 3,
+    "numeric_evidence": [
+      {
+        "path": "total",
+        "value": 3
+      }
+    ],
+    "response_sha256": "a103680a580190834487f0aae067250dd95ffe42e0e5a7ce387f5af53ba62d66"
+  },
+  {
+    "tool": "qualification_bigdata_enterprise_qualifications",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "贵州茅台酒股份有限公司",
+      "keywordType": "name",
+      "pageIndex": 1,
+      "pageSize": 8
+    },
+    "invocation_id": "1793070081475328000",
+    "elapsed_seconds": 0.936,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "resultList",
+      "total"
+    ],
+    "row_count": 5,
+    "reported_total": 5,
+    "numeric_evidence": [
+      {
+        "path": "resultList[0].publishYear",
+        "value": 2023
+      },
+      {
+        "path": "resultList[1].publishYear",
+        "value": 2023
+      },
+      {
+        "path": "resultList[2].publishYear",
+        "value": 2023
+      },
+      {
+        "path": "resultList[3].publishYear",
+        "value": 2023
+      },
+      {
+        "path": "resultList[4].publishYear",
+        "value": 2023
+      },
+      {
+        "path": "total",
+        "value": 5
+      }
+    ],
+    "response_sha256": "c6ceea3042099c22ede62988188791a540f6acdb7a8ca9193a8aa6f649e37e8b"
+  },
+  {
+    "tool": "qualification_bigdata_administrative_licenses",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "贵州茅台酒股份有限公司",
+      "keywordType": "name",
+      "pageIndex": 1,
+      "pageSize": 8
+    },
+    "invocation_id": "1793070081475328000",
+    "elapsed_seconds": 0.759,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "resultList",
+      "total"
+    ],
+    "row_count": 8,
+    "reported_total": 92,
+    "numeric_evidence": [
+      {
+        "path": "total",
+        "value": 92
+      }
+    ],
+    "response_sha256": "9c1965684416f339b0173bba212e4f88f0dbde73c67f63fccea3b5cc3de7e031"
+  },
+  {
+    "tool": "qualification_bigdata_hitech_enterprise_cert",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "贵州茅台酒股份有限公司",
+      "keywordType": "name",
+      "pageIndex": 1,
+      "pageSize": 8
+    },
+    "invocation_id": "1793070081475328000",
+    "elapsed_seconds": 0.647,
+    "status": "empty",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "text"
+    ],
+    "row_count": null,
+    "reported_total": null,
+    "numeric_evidence": [],
+    "response_sha256": "b2da0c4c26e517e5a1eae0af2a20ca47c52ef51906cf1c3dfa2fe10a67cc714c"
+  }
+]

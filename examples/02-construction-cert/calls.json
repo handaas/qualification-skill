@@ -1,0 +1,165 @@
+[
+  {
+    "tool": "qualification_bigdata_qualification_certificate_profile",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "中国建筑第八工程局有限公司",
+      "keywordType": "name"
+    },
+    "invocation_id": "1793070080818691000",
+    "elapsed_seconds": 1.396,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "certFirstPublishTime",
+      "certLastPublishTime",
+      "certNumberThisYear",
+      "certTypeList",
+      "certificateCount"
+    ],
+    "row_count": null,
+    "reported_total": null,
+    "numeric_evidence": [
+      {
+        "path": "certNumberThisYear",
+        "value": 29
+      },
+      {
+        "path": "certificateCount",
+        "value": 451
+      }
+    ],
+    "response_sha256": "93987641dfa25668fbddbfa44e2e2249a1cd245d5dfdce96fe038035b7a1200f"
+  },
+  {
+    "tool": "qualification_bigdata_honor_qualifications",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "中国建筑第八工程局有限公司",
+      "keywordType": "name"
+    },
+    "invocation_id": "1793070080818691000",
+    "elapsed_seconds": 1.557,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "resultList",
+      "total"
+    ],
+    "row_count": 9,
+    "reported_total": 9,
+    "numeric_evidence": [
+      {
+        "path": "total",
+        "value": 9
+      }
+    ],
+    "response_sha256": "1ddc8b559c03e800faad17e2b67ad405545df8391f9c42743337c829a2009905"
+  },
+  {
+    "tool": "qualification_bigdata_enterprise_qualifications",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "中国建筑第八工程局有限公司",
+      "keywordType": "name",
+      "pageIndex": 1,
+      "pageSize": 10
+    },
+    "invocation_id": "1793070080818691000",
+    "elapsed_seconds": 0.718,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "resultList",
+      "total"
+    ],
+    "row_count": 10,
+    "reported_total": 16,
+    "numeric_evidence": [
+      {
+        "path": "resultList[0].publishYear",
+        "value": 2025
+      },
+      {
+        "path": "resultList[1].publishYear",
+        "value": 2025
+      },
+      {
+        "path": "resultList[2].publishYear",
+        "value": 2025
+      },
+      {
+        "path": "resultList[3].publishYear",
+        "value": 2025
+      },
+      {
+        "path": "resultList[4].publishYear",
+        "value": 2025
+      },
+      {
+        "path": "total",
+        "value": 16
+      }
+    ],
+    "response_sha256": "89a1917141a8ddc3ec016c09d6ff7e32a0e0f4cd0e78a9bc6cb07306e25a996c"
+  },
+  {
+    "tool": "qualification_bigdata_administrative_licenses",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "中国建筑第八工程局有限公司",
+      "keywordType": "name",
+      "pageIndex": 1,
+      "pageSize": 10
+    },
+    "invocation_id": "1793070080818691000",
+    "elapsed_seconds": 0.617,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "resultList",
+      "total"
+    ],
+    "row_count": 10,
+    "reported_total": 15,
+    "numeric_evidence": [
+      {
+        "path": "total",
+        "value": 15
+      }
+    ],
+    "response_sha256": "3625d42558924952e77ec547c0a5dd8a7bf2f23ce0db2fc61a48dce796e3786f"
+  },
+  {
+    "tool": "qualification_bigdata_hitech_enterprise_cert",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "中国建筑第八工程局有限公司",
+      "keywordType": "name",
+      "pageIndex": 1,
+      "pageSize": 10
+    },
+    "invocation_id": "1793070080818691000",
+    "elapsed_seconds": 0.825,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "resultList",
+      "total"
+    ],
+    "row_count": 5,
+    "reported_total": 5,
+    "numeric_evidence": [
+      {
+        "path": "total",
+        "value": 5
+      }
+    ],
+    "response_sha256": "11b984b81ed8c38d425d7135cf71b6756160f9384ec7dc4e87f8ab55990e24c7"
+  }
+]

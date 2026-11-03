@@ -1,0 +1,46 @@
+{
+  "metric_overflows": [],
+  "document_title": "中国建筑第八工程局有限公司 资质大数据报告",
+  "title_matches": true,
+  "charts": 3,
+  "rendered_charts": 3,
+  "zero_size_charts": 0,
+  "chart_details": [
+    {
+      "width": 984,
+      "height": 300,
+      "instance": true,
+      "renderer": true,
+      "graphics": 25
+    },
+    {
+      "width": 984,
+      "height": 300,
+      "instance": true,
+      "renderer": true,
+      "graphics": 13
+    },
+    {
+      "width": 984,
+      "height": 300,
+      "instance": true,
+      "renderer": true,
+      "graphics": 29
+    }
+  ],
+  "page_width": 1905,
+  "viewport_width": 1920,
+  "empty_headers": 0,
+  "script_errors": [],
+  "external_resources": 0,
+  "external_asset_references": 0,
+  "ok": true,
+  "report_html_sha256": "21c262aa85f2359bafd653590871c8c8d7120c705c5284f82ce40db2ae889918",
+  "report_json_sha256": "bc9f5dc2b2d88151e4acb8cbe7d6bf96f337619ced728f65e72eac8cce78be7a",
+  "skill": "qualification-skill",
+  "id": "02-construction-cert",
+  "browser": "Ego Lite",
+  "space_id": 4,
+  "offline": true,
+  "checked_at": "2026-10-27T03:03:56.932Z"
+}

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="data:," />
-  <title>华为技术有限公司 资质大数据报告</title>
+  <title>宁德时代新能源科技股份有限公司 资质大数据报告</title>
   <style>
     :root { --bg:#eef1f5; --card:#ffffff; --text:#1f2937; --muted:#64748b; --line:#d8dee8; --blue:#003b71; --deep:#003b71; --red:#7f1d1d; --gold:#d97706; --stripe:#666; }
     * { box-sizing:border-box; letter-spacing:0 !important; }
@@ -145,6 +145,7 @@
     .chart-box-gauge { max-width:380px; }
     .chart-title { margin:0 0 8px; color:#0b3768; font-size:15px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; }
     .chart-canvas { width:100%; height:300px; }
+    .chart-canvas[data-chart-state="waiting"],.chart-canvas[data-chart-state="error"] { display:flex; align-items:center; justify-content:center; color:#64748b; font-size:13px; text-align:center; }
     .chart-box-gauge .chart-canvas { height:240px; }
     .chart-data { margin-top:10px; }
     .chart-data summary { cursor:pointer; color:#0b5ca8; font-size:12px; font-weight:700; padding:4px 0; }
@@ -212,16 +213,70 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
 </script>
   <script>
 (function(){
-  window.__echarts_instances=[];
+  if(window.__handaas_boot_charts){window.__handaas_boot_charts();return;}
+  window.__echarts_instances=window.__echarts_instances||[];
+  var status=window.__handaas_chart_status={state:'waiting',total:0,ready:0,failed:0};
+  var timer=null, retries=0, MAX_RETRIES=100;
+  var layoutRetries=0, MAX_LAYOUT_RETRIES=50;
+  var PALETTE=['#0b5ca8','#0284c7','#0b3768','#d97706','#059669','#dc2626','#7c3aed','#db2777','#0891b2','#65a30d'];
+  var FONTS='-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif';
+  function summarize(nodes){
+    status.total=nodes.length;status.ready=0;status.failed=0;
+    nodes.forEach(function(el){
+      if(el.getAttribute('data-chart-state')==='ready'){status.ready++;}
+      else if(el.getAttribute('data-chart-state')==='error'){status.failed++;}
+    });
+    status.state=status.ready===status.total?'ready':
+      (status.ready+status.failed===status.total?(status.ready?'degraded':'error'):'waiting');
+  }
+  function raf(fn){if(window.requestAnimationFrame){window.requestAnimationFrame(fn);}else{fn();}}
   function boot(){
-    if(typeof echarts==='undefined'){return;}
-    var PALETTE=['#0b5ca8','#0284c7','#0b3768','#d97706','#059669','#dc2626','#7c3aed','#db2777','#0891b2','#65a30d'];
-    var FONTS='-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif';
-    document.querySelectorAll('.chart-canvas').forEach(function(el){
-      var raw=el.getAttribute('data-spec'); if(!raw){return;}
-      var spec; try{spec=JSON.parse(raw.replace(/&quot;/g,'"').replace(/&amp;/g,'&'));}catch(e){return;}
-      var chart=echarts.init(el,null,{renderer:'svg'});
-      window.__echarts_instances.push(chart);
+    if(document.readyState==='loading'){return;}
+    var nodes=document.querySelectorAll('.chart-canvas');
+    if(!nodes.length){summarize(nodes);return;}
+    if(!window.echarts || typeof window.echarts.init!=='function'){
+      var exhausted=retries>=MAX_RETRIES;
+      nodes.forEach(function(el){
+        if(el.__handaas_chart_ready){return;}
+        el.__handaas_dependency_error=true;
+        el.setAttribute('data-chart-state',exhausted?'error':'waiting');
+        el.textContent=exhausted?'图表库加载失败或不可用，请查看数据明细或重新生成离线报告。':'图表库正在加载，数据明细仍可查看。';
+      });
+      summarize(nodes);
+      if(!exhausted && timer===null){
+        retries++;
+        timer=setTimeout(function(){timer=null;boot();},100);
+      }
+      return;
+    }
+    if(timer!==null){clearTimeout(timer);timer=null;}
+    var pendingLayout=0;
+    nodes.forEach(function(el){
+      if(el.__handaas_chart_ready){return;}
+      if(el.getAttribute('data-chart-state')==='error' && !el.__handaas_dependency_error){return;}
+      if(window.ResizeObserver && !el.__handaas_resize_observer){
+        el.__handaas_resize_observer=new ResizeObserver(function(){
+          var current=el.__handaas_chart;
+          if(current && typeof current.resize==='function'){try{current.resize();}catch(ignored){}}
+          else{boot();}
+        });
+        el.__handaas_resize_observer.observe(el);
+      }
+      if((el.getClientRects && el.getClientRects().length===0) || el.clientWidth<2 || el.clientHeight<2){
+        el.setAttribute('data-chart-state','waiting');
+        el.textContent='图表等待布局完成后渲染，数据明细仍可查看。';
+        pendingLayout++;
+        return;
+      }
+      var chart=null;
+      try{
+        var raw=el.getAttribute('data-spec');
+        if(!raw){throw new Error('Missing chart configuration');}
+        // getAttribute already decodes HTML entities; a second decode corrupts labels.
+        var spec=JSON.parse(raw);
+        if(['line','bar','pie','gauge','radar'].indexOf(spec.type)<0){throw new Error('Unsupported chart type');}
+        el.textContent='';
+        chart=window.echarts.init(el,null,{renderer:'svg'});
       var opt={color:PALETTE,tooltip:{trigger: spec.type==='pie'?'item':'axis'},textStyle:{fontFamily:FONTS,fontSize:12,color:'#334155'},grid:{left:48,right:24,top:30,bottom:40},legend:{top:0,textStyle:{fontSize:11}}};
       if(spec.type==='line'){
         opt.xAxis={type:'category',data:spec.x,axisLabel:{fontSize:11,interval:0,rotate: spec.x && spec.x.length>6?35:0}};
@@ -247,14 +302,47 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
         opt.radar={indicator:spec.indicators,radius:'62%',axisName:{color:'#475569',fontSize:11},splitArea:{areaStyle:{color:['#f8fbff','#eef4fb']}}};
         opt.series=[{type:'radar',areaStyle:{opacity:0.18},data:spec.series}];
       }
-      chart.setOption(opt);
-      window.addEventListener('resize',function(){chart.resize();});
+        chart.setOption(opt);
+        el.__handaas_chart=chart;
+        el.__handaas_chart_ready=true;
+        el.__handaas_dependency_error=false;
+        el.setAttribute('data-chart-state','ready');
+        window.__echarts_instances.push(chart);
+        raf(function(){try{chart.resize();}catch(ignored){}});
+      }catch(e){
+        if(chart && typeof chart.dispose==='function'){try{chart.dispose();}catch(ignored){}}
+        el.__handaas_dependency_error=false;
+        el.setAttribute('data-chart-state','error');
+        el.textContent='图表绘制失败，请查看数据明细。';
+      }
     });
+    summarize(nodes);
+    if(pendingLayout && layoutRetries<MAX_LAYOUT_RETRIES){
+      layoutRetries++;
+      setTimeout(boot,100);
+    }
   }
-  if(document.readyState!=='loading'){boot();}else{document.addEventListener('DOMContentLoaded',boot);}
+  window.__handaas_boot_charts=boot;
   window.__echarts_resize_all=function(){
     (window.__echarts_instances||[]).forEach(function(c){try{c.resize();}catch(e){}});
   };
+  function bootAfterLayout(){
+    raf(function(){boot();window.__echarts_resize_all();});
+  }
+  window.addEventListener('resize',window.__echarts_resize_all);
+  window.addEventListener('load',bootAfterLayout);
+  window.addEventListener('pageshow',bootAfterLayout);
+  window.addEventListener('handaas:echarts-ready',bootAfterLayout);
+  window.addEventListener('orientationchange',bootAfterLayout);
+  // A very late external script can still recover after the bounded retry ends.
+  document.addEventListener('load',function(event){
+    if(event.target && event.target.tagName==='SCRIPT'){boot();}
+  },true);
+  document.addEventListener('DOMContentLoaded',bootAfterLayout);
+  document.addEventListener('visibilitychange',boot);
+  if(document.fonts && document.fonts.ready){document.fonts.ready.then(function(){window.__echarts_resize_all();});}
+  [0,300,1000,2500].forEach(function(ms){setTimeout(function(){boot();window.__echarts_resize_all();},ms);});
+  boot();
 })();
 </script>
 </head>
@@ -264,75 +352,75 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
     <div class="cover-grid">
       <aside class="cover-side">
         <h2 class="cover-side-title">资质大数据报告</h2>
-        <p class="cover-date">2026年08月10日</p>
+        <p class="cover-date">2026年10月27日</p>
         <h3 class="toc-title">目录</h3>
         <ol class="toc-list"><li><span>报告摘要</span></li><li><span>查询对象与口径</span></li><li><span>数据总览</span></li><li><span>核心分析</span></li><li><span>代表性记录</span></li><li><span>特征与洞察</span></li></ol>
         <h3 class="scope-title">报告口径</h3>
-        <div class="biz-scope"><div class="biz-scope-item"><span>匹配对象</span><strong>华为技术有限公司</strong></div><div class="biz-scope-item"><span>匹配方式</span><strong>资质大数据按企业主体匹配（keywordType=name）</strong></div><div class="biz-scope-item"><span>数据范围</span><strong>资质证书概况、荣誉资质、企业资质、行政许可、高新技术企业认证、资质类别聚类、高新技术领域覆盖、获证年度趋势</strong></div><div class="biz-scope-item"><span>局限说明</span><strong>数据来自资质公开数据库；少量字段可能存在更新延迟。</strong></div></div>
+        <div class="biz-scope"><div class="biz-scope-item"><span>匹配对象</span><strong>宁德时代新能源科技股份有限公司</strong></div><div class="biz-scope-item"><span>匹配方式</span><strong>资质大数据按企业主体匹配（keywordType=name）</strong></div><div class="biz-scope-item"><span>数据范围</span><strong>资质证书概况、荣誉资质、企业资质、行政许可、高新技术企业认证、资质类别聚类、高新技术领域覆盖、获证年度趋势</strong></div><div class="biz-scope-item"><span>局限说明</span><strong>数据来自资质公开数据库；少量字段可能存在更新延迟。</strong></div></div>
       </aside>
       <section class="cover-main">
         <p class="report-kicker">QUALIFICATION DATA RESEARCH</p>
-        <h1>华为技术有限公司 资质大数据报告</h1>
-        <p class="report-lead">本报告以“华为技术有限公司”为分析对象，基于资质公开数据，系统呈现企业资质证书概况、荣誉资质、企业资质、行政许可与高新技术企业认证明细。关键指标包括：证书总数 22896、近一年获证 1575、荣誉资质 29 条、企业资质 37 条、行政许可 1075 条。报告同时给出资质资产规模、近期获证活跃度与高新技术资质的结构化解读，便于招投标、政策申报与商业合作决策参考</p>
+        <h1>宁德时代新能源科技股份有限公司 资质大数据报告</h1>
+        <p class="report-lead">本报告以“宁德时代新能源科技股份有限公司”为分析对象，基于资质公开数据，系统呈现企业资质证书概况、荣誉资质、企业资质、行政许可与高新技术企业认证明细。关键指标包括：证书总数 196、近一年获证 25、荣誉资质 18 条、企业资质 26 条、行政许可 304 条。报告同时给出资质资产规模、近期获证活跃度与高新技术资质的结构化解读，便于招投标、政策申报与商业合作决策参考</p>
         <div class="abstract-box">报告涵盖查询对象、数据总览、核心分析、代表性记录与结构洞察，所有数据均标注口径与来源。</div>
-        <div class="biz-metrics"><div class="biz-metric"><span class="m-name">证书总数</span><span class="m-tag"></span><span class="m-value">22896</span></div><div class="biz-metric"><span class="m-name">近一年获证</span><span class="m-tag t-neutral">占总量 7%</span><span class="m-value">1575</span></div><div class="biz-metric"><span class="m-name">荣誉资质</span><span class="m-tag"></span><span class="m-value">29 条</span></div><div class="biz-metric"><span class="m-name">企业资质</span><span class="m-tag"></span><span class="m-value">37 条</span></div><div class="biz-metric"><span class="m-name">行政许可</span><span class="m-tag"></span><span class="m-value">1075 条</span></div><div class="biz-metric"><span class="m-name">高新技术企业认证</span><span class="m-tag"></span><span class="m-value">5 条</span></div><div class="biz-metric"><span class="m-name">资质类别聚类</span><span class="m-tag"></span><span class="m-value">1 类</span></div><div class="biz-metric"><span class="m-name">高新技术领域</span><span class="m-tag"></span><span class="m-value">2 个</span></div><div class="biz-metric"><span class="m-name">资质类别数</span><span class="m-tag"></span><span class="m-value">4</span></div><div class="biz-metric"><span class="m-name">获证年份跨度</span><span class="m-tag"></span><span class="m-value">3</span></div><div class="biz-metric"><span class="m-name">近一年获证</span><span class="m-tag"></span><span class="m-value">1575</span></div><div class="biz-metric-empty"></div></div>
-        <ul class="exec-list"><li>证书总量反映企业资质积累的广度，是招投标、政策申报与商业合作的重要门槛指标。</li><li>近期获证占比反映资质扩张节奏：占比高说明企业处于资质快速积累期（如新业务/新政策驱动），占比低则资质结构趋于稳定。</li><li>高新技术企业资质是企业研发能力与税收优惠的重要依据；持续在有效期内说明企业研发投入稳定。</li><li>资质类别集中度反映业务聚焦方向：CR2 偏高意味着资质集中于少数类别、专业化方向明确；CR2 偏低则代表业务线多元、跨领域布局。</li><li>高新证书有效率直接影响企业享受税收优惠与政策红利的连续性；存在过期记录时建议尽快启动重新认定。</li></ul>
-        <div class="cover-findings"><h3 class="cover-findings-title">核心发现</h3><div class="cover-findings-grid"><div class="finding-card"><p class="f-label">资质资产规模</p><p class="f-text">企业资质证书总数 22896。</p></div><div class="finding-card"><p class="f-label">近期获证活跃度</p><p class="f-text">近一年获证 1575 项，占证书总量约 7%。</p></div><div class="finding-card"><p class="f-label">高新技术资质</p><p class="f-text">高新技术企业认证记录 5 条 条。</p></div><div class="finding-card"><p class="f-label">资质类别集中度</p><p class="f-text">“行政许可”类资质占比约 94%，前 2 类合计 97%（CR2）。</p></div></div></div>
+        <div class="biz-metrics"><div class="biz-metric"><span class="m-name">证书总数</span><span class="m-tag"></span><span class="m-value">196</span></div><div class="biz-metric"><span class="m-name">近一年获证</span><span class="m-tag t-neutral">占总量 13%</span><span class="m-value">25</span></div><div class="biz-metric"><span class="m-name">荣誉资质</span><span class="m-tag"></span><span class="m-value">18 条</span></div><div class="biz-metric"><span class="m-name">企业资质</span><span class="m-tag"></span><span class="m-value">26 条</span></div><div class="biz-metric"><span class="m-name">行政许可</span><span class="m-tag"></span><span class="m-value">304 条</span></div><div class="biz-metric"><span class="m-name">高新技术企业认证</span><span class="m-tag"></span><span class="m-value">4 条</span></div><div class="biz-metric"><span class="m-name">资质类别聚类</span><span class="m-tag"></span><span class="m-value">2 类</span></div><div class="biz-metric"><span class="m-name">高新技术领域</span><span class="m-tag"></span><span class="m-value">2 个</span></div><div class="biz-metric"><span class="m-name">资质类别数</span><span class="m-tag"></span><span class="m-value">4</span></div><div class="biz-metric"><span class="m-name">获证年份跨度</span><span class="m-tag"></span><span class="m-value">4</span></div><div class="biz-metric"><span class="m-name">近一年获证</span><span class="m-tag"></span><span class="m-value">25</span></div><div class="biz-metric-empty"></div></div>
+        <ul class="exec-list"><li>该值仅描述上游返回的证书总量，不单独证明业务能力、投标资格或合作适配性。</li><li>“近一年”沿用上游字段口径，当前响应未提供起止日期；该占比仅作数量观察，不推断扩张阶段或稳定程度。</li><li>该值仅描述返回的认证记录数；研发情况、优惠适用和认证有效性需核验具体证书及主管部门记录。</li><li>CR2 仅描述本次返回类别的数量集中程度，不能单独判断业务聚焦、专业化或多元化程度。</li><li>该比例仅按返回记录中的状态文本计算；优惠适用、续期要求和实际效力需以主管部门记录为准。</li></ul>
+        <div class="cover-findings"><h3 class="cover-findings-title">核心发现</h3><div class="cover-findings-grid"><div class="finding-card"><p class="f-label">资质资产规模</p><p class="f-text">企业资质证书总数 196。</p></div><div class="finding-card"><p class="f-label">近期获证观察</p><p class="f-text">近一年获证 25 项，占证书总量约 13%。</p></div><div class="finding-card"><p class="f-label">高新技术资质</p><p class="f-text">高新技术企业认证记录 4 条。</p></div><div class="finding-card"><p class="f-label">资质类别集中度</p><p class="f-text">“行政许可”类资质占比约 86%，前 2 类合计 94%（CR2）。</p></div></div></div>
         <div class="cover-dimensions"><span class="dim-label">分析维度</span><div class="dim-tags"><span class="dim-tag">资质证书概况</span><span class="dim-tag">资质类别分布</span><span class="dim-tag">资质类别聚类</span><span class="dim-tag">高新技术领域覆盖</span><span class="dim-tag">获证年度趋势</span><span class="dim-tag">荣誉资质</span><span class="dim-tag">企业资质</span><span class="dim-tag">行政许可</span><span class="dim-tag">高新技术企业认证</span></div></div>
         <div class="cover-scope-bar"><span class="scope-item"><em>数据产品</em>资质证书概况、荣誉资质、企业资质、行政许可、高新技术企业认证</span><span class="scope-item"><em>覆盖范围</em>资质证书概况、荣誉资质、企业资质、行政许可、高新技术企业认证、资质类别聚类、高新技术领域覆盖、获证年度趋势</span></div>
       </section>
     </div>
   </article>
   <main class="research-doc">
-    <section class="report-page biz-section"><div class="report-topbar"><div class="report-stripe"></div><div class="report-banner">资质大数据报告</div></div><div class="biz-section-head"><div><h2>报告摘要</h2><p class="biz-section-note">概述分析对象、数据覆盖范围与核心发现。</p></div><span class="biz-tag">Summary</span></div><p class="biz-summary">本报告以“华为技术有限公司”为分析对象，基于资质公开数据，系统呈现企业资质证书概况、荣誉资质、企业资质、行政许可与高新技术企业认证明细。关键指标包括：证书总数 22896、近一年获证 1575、荣誉资质 29 条、企业资质 37 条、行政许可 1075 条。报告同时给出资质资产规模、近期获证活跃度与高新技术资质的结构化解读，便于招投标、政策申报与商业合作决策参考</p></section>
-    <section class="report-page biz-section"><div class="report-topbar"><div class="report-stripe"></div><div class="report-banner">资质大数据报告</div></div><div class="biz-section-head"><div><h2>查询对象与口径</h2><p class="biz-section-note">说明匹配对象、匹配方式与数据范围。</p></div><span class="biz-tag">Caliber</span></div><div class="info-list"><div class="info-row"><span class="info-label">匹配对象</span><span class="info-value">华为技术有限公司</span></div><div class="info-row"><span class="info-label">匹配方式</span><span class="info-value">资质大数据按企业主体匹配（keywordType=name）</span></div><div class="info-row"><span class="info-label">数据范围</span><span class="info-value">资质证书概况、荣誉资质、企业资质、行政许可、高新技术企业认证、资质类别聚类、高新技术领域覆盖、获证年度趋势</span></div><div class="info-row"><span class="info-label">局限说明</span><span class="info-value">数据来自资质公开数据库；少量字段可能存在更新延迟。</span></div></div></section>
-    <section class="report-page biz-section"><div class="report-topbar"><div class="report-stripe"></div><div class="report-banner">资质大数据报告</div></div><div class="biz-section-head"><div><h2>数据总览</h2><p class="biz-section-note">关键指标一览。</p></div><span class="biz-tag">Metrics</span></div><div class="biz-metrics"><div class="biz-metric"><span class="m-name">证书总数</span><span class="m-tag"></span><span class="m-value">22896</span></div><div class="biz-metric"><span class="m-name">近一年获证</span><span class="m-tag t-neutral">占总量 7%</span><span class="m-value">1575</span></div><div class="biz-metric"><span class="m-name">荣誉资质</span><span class="m-tag"></span><span class="m-value">29 条</span></div><div class="biz-metric"><span class="m-name">企业资质</span><span class="m-tag"></span><span class="m-value">37 条</span></div><div class="biz-metric"><span class="m-name">行政许可</span><span class="m-tag"></span><span class="m-value">1075 条</span></div><div class="biz-metric"><span class="m-name">高新技术企业认证</span><span class="m-tag"></span><span class="m-value">5 条</span></div><div class="biz-metric"><span class="m-name">资质类别聚类</span><span class="m-tag"></span><span class="m-value">1 类</span></div><div class="biz-metric"><span class="m-name">高新技术领域</span><span class="m-tag"></span><span class="m-value">2 个</span></div><div class="biz-metric"><span class="m-name">资质类别数</span><span class="m-tag"></span><span class="m-value">4</span></div><div class="biz-metric"><span class="m-name">获证年份跨度</span><span class="m-tag"></span><span class="m-value">3</span></div><div class="biz-metric"><span class="m-name">近一年获证</span><span class="m-tag"></span><span class="m-value">1575</span></div><div class="biz-metric-empty"></div></div></section>
-    <section class="report-page biz-section"><div class="report-topbar"><div class="report-stripe"></div><div class="report-banner">资质大数据报告</div></div><div class="biz-section-head"><div><h2>核心分析</h2><p class="biz-section-note">按维度展开目标核心数据与结构化明细。</p></div><span class="biz-tag">Analysis</span></div><h3 class="biz-subsection-title">资质证书概况</h3><div class="info-list"><div class="info-row"><span class="info-label">证书总数</span><span class="info-value">22896</span></div><div class="info-row"><span class="info-label">近一年获证数量</span><span class="info-value">1575</span></div><div class="info-row"><span class="info-label">初次获证日期</span><span class="info-value">2000-03-30</span></div><div class="info-row"><span class="info-label">最近获证日期</span><span class="info-value">2026-06-23</span></div><div class="info-row"><span class="info-label">涵盖证书类别</span><span class="info-value">环境标志产品、网络关键设备、强制性产品自我声明证书、运输资产保护协会 运输供应商最低安全要求认证、业务连续性管理体系、软件企业证书、网络安全专用产品、静电防护标准认证、温室气体排放和清除的量化和报告的规范及指南认证、电子信息产品污染控制自愿性认证、低压电器、软件产品证书、商用密码产品销售许可、煤矿安全标志、信息安全管理体系认证、电气与电子元件和产品有害物质过程控制管理体系认证、能源管理体系认证、无线电发射设备型号核准、环境管理体系认证、施工许可信息、CCC、其他、信息安全应急处理服务资质认证、其他自愿性工业产品认证、竣工验收备案信息、计算机信息系统安全专用产品销售许可证、排污登记信息、防爆电气、电信终端设备、供应链安全管理体系认证、所有未列明的其他管理体系认证、商用密码产品、在收费或合同基础上的生产服务、电器电子产品有害物质限制使用、企业知识产权管理体系认证、服务资质认证证书、商务部商务信用评级、测量管理体系、节能产品认证(不含建筑节能)、信息安全服务资质认证、中国职业健康安全管理体系认证、商品和服务在生命周期内的温室气体排放评价规范认证、网络关键设备和网络安全专用产品安全认证、无线局域网获证、音视频设备、家用和类似用途设备、售后服务认证、电信设备进网许可证、建设用地规划许可证、高新技术企业、质量管理体系认证(ISO9001)、信息技术设备、信息安全产品认证(未列入强制性产品认证目录内的信息安全产品)、商用密码产品品种和型号、金融中介、保险和辅助服务、电讯业质量管理体系认证、国家信息安全产品认证、排污许可证、国家保密局产品检测证书、运行维护、城市轨道交通产品认证、电路开关及保护或连接用电器装置、对外贸易经营备案、金融科技产品、安全防范产品、移动金融技术服务认证、电信业务经营许可证、铁路产品认证、非煤矿安全标志、金融科技产品(不含人民币现金机具)、光伏产品认证、信息技术服务管理体系认证、商品售后服务评价认证、碳披露类直接涉碳产品认证、守合同重信用、无线电发射设备型号核准证、可再生能源</span></div></div>
-<p class="biz-section-note">按荣誉/企业资质/行政许可/高新聚合资质条数</p><div class="chart-box"><h4 class="chart-title">资质类别分布</h4><div class="chart-canvas" data-chart="pie" data-spec="{&quot;type&quot;:&quot;pie&quot;,&quot;donut&quot;:true,&quot;data&quot;:[{&quot;name&quot;:&quot;荣誉资质&quot;,&quot;value&quot;:29.0},{&quot;name&quot;:&quot;企业资质&quot;,&quot;value&quot;:37.0},{&quot;name&quot;:&quot;行政许可&quot;,&quot;value&quot;:1075.0},{&quot;name&quot;:&quot;高新技术企业认证&quot;,&quot;value&quot;:5.0}]}"></div><details class="chart-data"><summary>数据明细</summary><div class="table-wrap"><table><thead><tr><th>资质类别</th><th>数量</th></tr></thead><tbody><tr><td>荣誉资质</td><td>29</td></tr><tr><td>企业资质</td><td>37</td></tr><tr><td>行政许可</td><td>1075</td></tr><tr><td>高新技术企业认证</td><td>5</td></tr></tbody></table></div></details></div>
-<p class="biz-section-note">按 qualificationClasses（科技研发与创新类/产业升级与转型类等）聚合</p><div class="chart-box"><h4 class="chart-title">资质类别聚类</h4><div class="chart-canvas" data-chart="pie" data-spec="{&quot;type&quot;:&quot;pie&quot;,&quot;donut&quot;:true,&quot;data&quot;:[{&quot;name&quot;:&quot;科技研发与创新类&quot;,&quot;value&quot;:10.0}]}"></div><details class="chart-data"><summary>数据明细</summary><div class="table-wrap"><table><thead><tr><th>资质类别聚类</th><th>数量</th></tr></thead><tbody><tr><td>科技研发与创新类</td><td>10</td></tr></tbody></table></div></details></div>
-<p class="biz-section-note">按 highTechIndustryList 聚合的高新技术领域覆盖次数</p><div class="chart-box"><h4 class="chart-title">高新技术领域覆盖</h4><div class="chart-canvas" data-chart="bar" data-spec="{&quot;type&quot;:&quot;bar&quot;,&quot;orient&quot;:&quot;v&quot;,&quot;names&quot;:[&quot;电子信息&quot;,&quot;先进制造与自动化&quot;],&quot;values&quot;:[10.0,10.0]}"></div><details class="chart-data"><summary>数据明细</summary><div class="table-wrap"><table><thead><tr><th>高新技术领域</th><th>覆盖次数</th></tr></thead><tbody><tr><td>电子信息</td><td>10</td></tr><tr><td>先进制造与自动化</td><td>10</td></tr></tbody></table></div></details></div>
-<p class="biz-section-note">按 publishYear 统计企业资质获证数量</p><div class="chart-box"><h4 class="chart-title">获证年度趋势</h4><div class="chart-canvas" data-chart="line" data-spec="{&quot;type&quot;:&quot;line&quot;,&quot;area&quot;:true,&quot;x&quot;:[&quot;2023&quot;,&quot;2024&quot;,&quot;2025&quot;],&quot;series&quot;:[{&quot;name&quot;:&quot;获证年度趋势&quot;,&quot;data&quot;:[5.0,3.0,2.0]}]}"></div><details class="chart-data"><summary>数据明细</summary><div class="table-wrap"><table><thead><tr><th>年份</th><th>数量</th></tr></thead><tbody><tr><td>2023</td><td>5</td></tr><tr><td>2024</td><td>3</td></tr><tr><td>2025</td><td>2</td></tr></tbody></table></div></details></div>
-<h3 class="biz-subsection-title">荣誉资质</h3><p class="biz-section-note">共 29 条，展示前 10 条</p><div class="table-wrap"><table><thead><tr><th>资质类型</th><th>资质级别</th><th>认定机关</th><th>发布日期</th><th>有效期</th></tr></thead><tbody><tr><td>企业技术中心</td><td>国家级</td><td>中华人民共和国国家发展和改革委员会</td><td>2026-06-02</td><td>2026-06-02、2029-06-02</td></tr><tr><td>专利预审备案企业</td><td>省级</td><td>中国(广东)知识产权保护中心</td><td>2026-03-31</td><td>2026-03-31</td></tr><tr><td>重点实验室</td><td>国家级</td><td>国家矿山安全监察局</td><td>2024-02-27</td><td>2024-02-27、2027-02-27</td></tr><tr><td>技术创新示范企业</td><td>国家级</td><td>工业和信息化部</td><td>2024-01-17</td><td>2024-01-17、2027-01-17</td></tr><tr><td>技术创新示范企业</td><td>国家级</td><td>中华人民共和国工业和信息化部</td><td>2024-01-12</td><td>2024-01-11、2027-01-11</td></tr><tr><td>高新技术企业</td><td>国家级</td><td>高新技术企业认定管理工作网</td><td>2023-12-08</td><td>2023-11-15、2026-11-15</td></tr><tr><td>工程研究中心</td><td>省级</td><td>广西壮族自治区发展和改革委员会</td><td>2023-12-05</td><td>2023-12-05、2026-12-05</td></tr><tr><td>工业设计中心</td><td>国家级</td><td>中华人民共和国工业和信息化部</td><td>2023-11-16</td><td>2023-11-16、2026-11-16</td></tr><tr><td>工程技术研究中心</td><td>省级</td><td>广西壮族自治区科学技术厅</td><td>2023-08-21</td><td>2023-08-21、2026-08-21</td></tr><tr><td>重点实验室</td><td>省级</td><td>广西壮族自治区科学技术厅</td><td>2023-08-21</td><td>2023-08-21、2026-08-21</td></tr></tbody></table></div>
-<h3 class="biz-subsection-title">企业资质</h3><p class="biz-section-note">共 37 条，展示前 10 条</p><div class="table-wrap"><table><thead><tr><th>资质类型</th><th>资质类别聚类</th><th>资质级别</th><th>发布单位</th><th>发布日期</th><th>获证年度</th></tr></thead><tbody><tr><td>企业技术中心</td><td>科技研发与创新类</td><td>国家级</td><td>中华人民共和国国家发展和改革委员会</td><td>2026-06-02</td><td>2025</td></tr><tr><td>企业技术中心</td><td>科技研发与创新类</td><td>国家级</td><td>中华人民共和国国家发展和改革委员会</td><td>2026-06-02</td><td>2025</td></tr><tr><td>重点实验室</td><td>科技研发与创新类</td><td>国家级</td><td>国家矿山安全监察局政策法规和科技装备司</td><td>2024-02-27</td><td>2024</td></tr><tr><td>重点实验室</td><td>科技研发与创新类</td><td>国家级</td><td>国家矿山安全监察局</td><td>2024-02-27</td><td>2024</td></tr><tr><td>技术创新示范企业</td><td>科技研发与创新类</td><td>国家级</td><td>工业和信息化部</td><td>2024-01-17</td><td>2023</td></tr><tr><td>技术创新示范企业</td><td>科技研发与创新类</td><td>国家级</td><td>中华人民共和国工业和信息化部</td><td>2024-01-12</td><td>2023</td></tr><tr><td>技术创新示范企业</td><td>科技研发与创新类</td><td>国家级</td><td>中华人民共和国工业和信息化部</td><td>2024-01-12</td><td>2024</td></tr><tr><td>高新技术企业备案公示企业</td><td>科技研发与创新类</td><td>国家级</td><td>高新技术企业认定管理工作网</td><td>2023-12-08</td><td>2023</td></tr><tr><td>高新技术企业备案公示企业</td><td>科技研发与创新类</td><td>国家级</td><td>全国高新技术企业认定管理工作领导小组办公室</td><td>2023-12-08</td><td>2023</td></tr><tr><td>工程研究中心</td><td>科技研发与创新类</td><td>省级</td><td>广西壮族自治区发展和改革委员会</td><td>2023-12-05</td><td>2023</td></tr></tbody></table></div>
-<h3 class="biz-subsection-title">行政许可</h3><p class="biz-section-note">共 1075 条，展示前 10 条</p><div class="table-wrap"><table><thead><tr><th>许可事项</th><th>许可机关</th><th>当前状态</th><th>有效期自</th><th>有效期至</th></tr></thead><tbody><tr><td>特种设备使用登记（按台/套办理）</td><td>深圳市市场监督管理局龙岗监管局</td><td>-</td><td>2025-04-27</td><td>2099-12-31</td></tr><tr><td>特种设备使用登记（按台/套办理）</td><td>深圳市市场监督管理局龙华监管局</td><td>-</td><td>2024-11-01</td><td>2099-12-31</td></tr><tr><td>特种设备使用登记（按台/套办理）</td><td>深圳市市场监督管理局龙岗监管局</td><td>-</td><td>2026-03-27</td><td>2099-12-31</td></tr><tr><td>特种设备使用登记（按台/套办理）</td><td>深圳市市场监督管理局龙岗监管局</td><td>-</td><td>2024-04-24</td><td>2099-12-31</td></tr><tr><td>特种设备使用登记（按台/套办理）</td><td>深圳市市场监督管理局龙华监管局</td><td>-</td><td>2024-12-25</td><td>2099-12-31</td></tr><tr><td>不实施进一步审查决定书</td><td>国家市场监督管理总局</td><td>-</td><td>2024-02-08</td><td>9999-12-31</td></tr><tr><td>特种设备使用登记（按台/套办理）</td><td>深圳市市场监督管理局龙华监管局</td><td>-</td><td>2024-12-23</td><td>2099-12-31</td></tr><tr><td>特种设备使用登记（按台/套办理）</td><td>深圳市市场监督管理局龙岗监管局</td><td>-</td><td>2024-12-05</td><td>2099-12-31</td></tr><tr><td>特种设备使用登记（按台/套办理）</td><td>深圳市市场监督管理局龙华监管局</td><td>-</td><td>2024-12-23</td><td>2099-12-31</td></tr><tr><td>特种设备使用登记（按台/套办理）</td><td>深圳市市场监督管理局龙岗监管局</td><td>-</td><td>2025-04-27</td><td>2099-12-31</td></tr></tbody></table></div>
-<h3 class="biz-subsection-title">高新技术企业认证</h3><p class="biz-section-note">共 5 条，展示前 5 条</p><div class="table-wrap"><table><thead><tr><th>证书编号</th><th>资质类别</th><th>发证机构</th><th>颁证日期</th><th>截止日期</th><th>证书状态</th></tr></thead><tbody><tr><td>GR202344204679</td><td>高新技术企业</td><td>深圳市认定机构办公室</td><td>2023-11-15</td><td>2026-11-15</td><td>有效</td></tr><tr><td>GR202044200661</td><td>高新技术企业</td><td>深圳市认定机构办公室</td><td>2020-12-11</td><td>2023-12-11</td><td>过期</td></tr><tr><td>GR201744202066</td><td>高新技术企业</td><td>深圳市认定机构办公室</td><td>2017-10-31</td><td>2020-10-31</td><td>过期</td></tr><tr><td>GR201444201346</td><td>高新技术企业</td><td>深圳市认定机构办公室</td><td>2014-11-01</td><td>2017-11-01</td><td>过期</td></tr><tr><td>GF201144200266</td><td>高新技术企业</td><td>深圳市认定机构办公室</td><td>2011-11-03</td><td>2014-11-03</td><td>过期</td></tr></tbody></table></div></section>
-    <section class="report-page biz-section"><div class="report-topbar"><div class="report-stripe"></div><div class="report-banner">资质大数据报告</div></div><div class="biz-section-head"><div><h2>代表性记录</h2><p class="biz-section-note">关键明细记录 Top N。</p></div><span class="biz-tag">Records</span></div><div class="table-wrap"><table><thead><tr><th>资质类型</th><th>资质级别</th><th>认定机关</th></tr></thead><tbody><tr><td>企业技术中心</td><td>国家级</td><td>中华人民共和国国家发展和改革委员会</td></tr><tr><td>专利预审备案企业</td><td>省级</td><td>中国(广东)知识产权保护中心</td></tr><tr><td>重点实验室</td><td>国家级</td><td>国家矿山安全监察局</td></tr><tr><td>技术创新示范企业</td><td>国家级</td><td>工业和信息化部</td></tr><tr><td>技术创新示范企业</td><td>国家级</td><td>中华人民共和国工业和信息化部</td></tr><tr><td>高新技术企业</td><td>国家级</td><td>高新技术企业认定管理工作网</td></tr><tr><td>工程研究中心</td><td>省级</td><td>广西壮族自治区发展和改革委员会</td></tr><tr><td>工业设计中心</td><td>国家级</td><td>中华人民共和国工业和信息化部</td></tr><tr><td>工程技术研究中心</td><td>省级</td><td>广西壮族自治区科学技术厅</td></tr><tr><td>重点实验室</td><td>省级</td><td>广西壮族自治区科学技术厅</td></tr><tr><td>高新技术企业认证</td><td>高新技术企业</td><td>深圳市认定机构办公室</td></tr><tr><td>高新技术企业认证</td><td>高新技术企业</td><td>深圳市认定机构办公室</td></tr><tr><td>高新技术企业认证</td><td>高新技术企业</td><td>深圳市认定机构办公室</td></tr><tr><td>高新技术企业认证</td><td>高新技术企业</td><td>深圳市认定机构办公室</td></tr><tr><td>高新技术企业认证</td><td>高新技术企业</td><td>深圳市认定机构办公室</td></tr></tbody></table></div></section>
+    <section class="report-page biz-section"><div class="report-topbar"><div class="report-stripe"></div><div class="report-banner">资质大数据报告</div></div><div class="biz-section-head"><div><h2>报告摘要</h2><p class="biz-section-note">概述分析对象、数据覆盖范围与核心发现。</p></div><span class="biz-tag">Summary</span></div><p class="biz-summary">本报告以“宁德时代新能源科技股份有限公司”为分析对象，基于资质公开数据，系统呈现企业资质证书概况、荣誉资质、企业资质、行政许可与高新技术企业认证明细。关键指标包括：证书总数 196、近一年获证 25、荣誉资质 18 条、企业资质 26 条、行政许可 304 条。报告同时给出资质资产规模、近期获证活跃度与高新技术资质的结构化解读，便于招投标、政策申报与商业合作决策参考</p></section>
+    <section class="report-page biz-section"><div class="report-topbar"><div class="report-stripe"></div><div class="report-banner">资质大数据报告</div></div><div class="biz-section-head"><div><h2>查询对象与口径</h2><p class="biz-section-note">说明匹配对象、匹配方式与数据范围。</p></div><span class="biz-tag">Caliber</span></div><div class="info-list"><div class="info-row"><span class="info-label">匹配对象</span><span class="info-value">宁德时代新能源科技股份有限公司</span></div><div class="info-row"><span class="info-label">匹配方式</span><span class="info-value">资质大数据按企业主体匹配（keywordType=name）</span></div><div class="info-row"><span class="info-label">数据范围</span><span class="info-value">资质证书概况、荣誉资质、企业资质、行政许可、高新技术企业认证、资质类别聚类、高新技术领域覆盖、获证年度趋势</span></div><div class="info-row"><span class="info-label">局限说明</span><span class="info-value">数据来自资质公开数据库；少量字段可能存在更新延迟。</span></div></div></section>
+    <section class="report-page biz-section"><div class="report-topbar"><div class="report-stripe"></div><div class="report-banner">资质大数据报告</div></div><div class="biz-section-head"><div><h2>数据总览</h2><p class="biz-section-note">关键指标一览。</p></div><span class="biz-tag">Metrics</span></div><div class="biz-metrics"><div class="biz-metric"><span class="m-name">证书总数</span><span class="m-tag"></span><span class="m-value">196</span></div><div class="biz-metric"><span class="m-name">近一年获证</span><span class="m-tag t-neutral">占总量 13%</span><span class="m-value">25</span></div><div class="biz-metric"><span class="m-name">荣誉资质</span><span class="m-tag"></span><span class="m-value">18 条</span></div><div class="biz-metric"><span class="m-name">企业资质</span><span class="m-tag"></span><span class="m-value">26 条</span></div><div class="biz-metric"><span class="m-name">行政许可</span><span class="m-tag"></span><span class="m-value">304 条</span></div><div class="biz-metric"><span class="m-name">高新技术企业认证</span><span class="m-tag"></span><span class="m-value">4 条</span></div><div class="biz-metric"><span class="m-name">资质类别聚类</span><span class="m-tag"></span><span class="m-value">2 类</span></div><div class="biz-metric"><span class="m-name">高新技术领域</span><span class="m-tag"></span><span class="m-value">2 个</span></div><div class="biz-metric"><span class="m-name">资质类别数</span><span class="m-tag"></span><span class="m-value">4</span></div><div class="biz-metric"><span class="m-name">获证年份跨度</span><span class="m-tag"></span><span class="m-value">4</span></div><div class="biz-metric"><span class="m-name">近一年获证</span><span class="m-tag"></span><span class="m-value">25</span></div><div class="biz-metric-empty"></div></div></section>
+    <section class="report-page biz-section"><div class="report-topbar"><div class="report-stripe"></div><div class="report-banner">资质大数据报告</div></div><div class="biz-section-head"><div><h2>核心分析</h2><p class="biz-section-note">按维度展开目标核心数据与结构化明细。</p></div><span class="biz-tag">Analysis</span></div><h3 class="biz-subsection-title">资质证书概况</h3><div class="info-list"><div class="info-row"><span class="info-label">证书总数</span><span class="info-value">196</span></div><div class="info-row"><span class="info-label">近一年获证数量</span><span class="info-value">25</span></div><div class="info-row"><span class="info-label">初次获证日期</span><span class="info-value">2013-12-18</span></div><div class="info-row"><span class="info-label">最近获证日期</span><span class="info-value">2026-08-27</span></div><div class="info-row"><span class="info-label">涵盖证书类别</span><span class="info-value">两化融合管理体系、CMMI、能源管理体系认证、汽车行业质量管理体系认证、高新技术企业、对外贸易经营备案、在收费或合同基础上的生产服务、其他自愿性工业产品认证、环境管理体系认证、商品售后服务评价认证、信息技术设备、售后服务认证、食品经营许可证、储能型锂离子电池、中国职业健康安全管理体系认证、静电防护标准认证、信息安全管理体系认证、所有未列明的其他管理体系认证、排污许可证、质量管理体系认证(ISO9001)</span></div></div>
+<p class="biz-section-note">按荣誉/企业资质/行政许可/高新聚合资质条数</p><div class="chart-box"><h4 class="chart-title">资质类别分布</h4><div class="chart-canvas" data-chart="pie" data-spec="{&quot;type&quot;:&quot;pie&quot;,&quot;donut&quot;:true,&quot;data&quot;:[{&quot;name&quot;:&quot;荣誉资质&quot;,&quot;value&quot;:18.0},{&quot;name&quot;:&quot;企业资质&quot;,&quot;value&quot;:26.0},{&quot;name&quot;:&quot;行政许可&quot;,&quot;value&quot;:304.0},{&quot;name&quot;:&quot;高新技术企业认证&quot;,&quot;value&quot;:4.0}]}"></div><details class="chart-data"><summary>数据明细</summary><div class="table-wrap"><table><thead><tr><th>资质类别</th><th>数量</th></tr></thead><tbody><tr><td>荣誉资质</td><td>18</td></tr><tr><td>企业资质</td><td>26</td></tr><tr><td>行政许可</td><td>304</td></tr><tr><td>高新技术企业认证</td><td>4</td></tr></tbody></table></div></details></div>
+<p class="biz-section-note">按 qualificationClasses（科技研发与创新类/产业升级与转型类等）聚合</p><div class="chart-box"><h4 class="chart-title">资质类别聚类</h4><div class="chart-canvas" data-chart="pie" data-spec="{&quot;type&quot;:&quot;pie&quot;,&quot;donut&quot;:true,&quot;data&quot;:[{&quot;name&quot;:&quot;科技研发与创新类&quot;,&quot;value&quot;:6.0},{&quot;name&quot;:&quot;产业升级与转型类&quot;,&quot;value&quot;:1.0}]}"></div><details class="chart-data"><summary>数据明细</summary><div class="table-wrap"><table><thead><tr><th>资质类别聚类</th><th>数量</th></tr></thead><tbody><tr><td>科技研发与创新类</td><td>6</td></tr><tr><td>产业升级与转型类</td><td>1</td></tr></tbody></table></div></details></div>
+<p class="biz-section-note">按 highTechIndustryList 聚合的高新技术领域覆盖次数</p><div class="chart-box"><h4 class="chart-title">高新技术领域覆盖</h4><div class="chart-canvas" data-chart="bar" data-spec="{&quot;type&quot;:&quot;bar&quot;,&quot;orient&quot;:&quot;v&quot;,&quot;names&quot;:[&quot;新能源与节能&quot;,&quot;先进制造与自动化&quot;],&quot;values&quot;:[7.0,7.0]}"></div><details class="chart-data"><summary>数据明细</summary><div class="table-wrap"><table><thead><tr><th>高新技术领域</th><th>覆盖次数</th></tr></thead><tbody><tr><td>新能源与节能</td><td>7</td></tr><tr><td>先进制造与自动化</td><td>7</td></tr></tbody></table></div></details></div>
+<p class="biz-section-note">按 publishYear 统计企业资质获证数量</p><div class="chart-box"><h4 class="chart-title">获证年度趋势</h4><div class="chart-canvas" data-chart="line" data-spec="{&quot;type&quot;:&quot;line&quot;,&quot;area&quot;:true,&quot;x&quot;:[&quot;2023&quot;,&quot;2024&quot;,&quot;2025&quot;,&quot;2026&quot;],&quot;series&quot;:[{&quot;name&quot;:&quot;获证年度趋势&quot;,&quot;data&quot;:[4.0,1.0,1.0,1.0]}]}"></div><details class="chart-data"><summary>数据明细</summary><div class="table-wrap"><table><thead><tr><th>年份</th><th>数量</th></tr></thead><tbody><tr><td>2023</td><td>4</td></tr><tr><td>2024</td><td>1</td></tr><tr><td>2025</td><td>1</td></tr><tr><td>2026</td><td>1</td></tr></tbody></table></div></details></div>
+<h3 class="biz-subsection-title">荣誉资质</h3><p class="biz-section-note">共 18 条，当前页展示 10 条</p><div class="table-wrap"><table><thead><tr><th>资质类型</th><th>资质级别</th><th>认定机关</th><th>发布日期</th><th>有效期</th></tr></thead><tbody><tr><td>企业技术中心</td><td>省级</td><td>福建省工业和信息化厅</td><td>2026-06-09</td><td>2026-06-09、2029-06-09</td></tr><tr><td>重点实验室</td><td>省级</td><td>浙江省科学技术厅</td><td>2025-06-04</td><td>2025-06-04、2028-06-04</td></tr><tr><td>首台套</td><td>国家级</td><td>厦门市发展和改革委员会</td><td>2025-04-08</td><td>2025-04-08、2028-04-08</td></tr><tr><td>工程技术研究中心</td><td>省级</td><td>福建省科学技术厅</td><td>2024-02-02</td><td>2024-02-02、2027-02-02</td></tr><tr><td>高新技术企业</td><td>国家级</td><td>高新技术企业认定管理工作网</td><td>2024-01-24</td><td>2023-12-28、2026-12-28</td></tr><tr><td>技术创新示范企业</td><td>国家级</td><td>工业和信息化部</td><td>2024-01-17</td><td>2024-01-17、2027-01-17</td></tr><tr><td>技术创新示范企业</td><td>国家级</td><td>中华人民共和国工业和信息化部</td><td>2024-01-12</td><td>2024-01-11、2027-01-11</td></tr><tr><td>重点实验室</td><td>省级</td><td>福建省科学技术厅</td><td>2023-12-14</td><td>2023-12-14、2026-12-14</td></tr><tr><td>知识产权示范企业</td><td>国家级</td><td>国家知识产权局</td><td>2022-10-31</td><td>2022-10-31、2025-10-31</td></tr><tr><td>制造业单项冠军企业</td><td>省级</td><td>青海省工业和信息化厅</td><td>2022-05-25</td><td>2022-05-24、2025-05-24</td></tr></tbody></table></div>
+<h3 class="biz-subsection-title">企业资质</h3><p class="biz-section-note">上游总量 26 条，当前页去重展示 7 条</p><div class="table-wrap"><table><thead><tr><th>资质类型</th><th>资质类别聚类</th><th>资质级别</th><th>发布单位</th><th>发布日期</th><th>获证年度</th></tr></thead><tbody><tr><td>企业技术中心</td><td>科技研发与创新类</td><td>省级</td><td>福建省工业和信息化厅</td><td>2026-06-09</td><td>2026</td></tr><tr><td>重点实验室</td><td>科技研发与创新类</td><td>省级</td><td>浙江省科学技术厅</td><td>2025-06-04</td><td>2024</td></tr><tr><td>首台套</td><td>产业升级与转型类</td><td>国家级</td><td>厦门市发展和改革委员会</td><td>2025-04-08</td><td>2025</td></tr><tr><td>工程技术研究中心</td><td>科技研发与创新类</td><td>省级</td><td>福建省科学技术厅</td><td>2024-02-02</td><td>2023</td></tr><tr><td>高新技术企业备案公示企业</td><td>科技研发与创新类</td><td>国家级</td><td>高新技术企业认定管理工作网</td><td>2024-01-24</td><td>2023</td></tr><tr><td>高新技术企业备案公示企业</td><td>科技研发与创新类</td><td>国家级</td><td>全国高新技术企业认定管理工作领导小组办公室</td><td>2024-01-24</td><td>2023</td></tr><tr><td>技术创新示范企业</td><td>科技研发与创新类</td><td>国家级</td><td>工业和信息化部</td><td>2024-01-17</td><td>2023</td></tr></tbody></table></div>
+<h3 class="biz-subsection-title">行政许可</h3><p class="biz-section-note">共 304 条，当前页展示 8 条</p><div class="table-wrap"><table><thead><tr><th>许可事项</th><th>决定文书号</th><th>许可机关</th><th>当前状态</th><th>有效期自</th><th>有效期至</th></tr></thead><tbody><tr><td>不实施进一步审查决定书</td><td>反执二审查决定〔2024〕245号</td><td>国家市场监督管理总局</td><td>-</td><td>2024-05-13</td><td>9999-12-31</td></tr><tr><td>不实施进一步审查决定书</td><td>反执二审查决定〔2024〕113号</td><td>国家市场监督管理总局</td><td>-</td><td>2024-02-23</td><td>9999-12-31</td></tr><tr><td>不实施进一步审查决定书</td><td>反执二审查决定〔2025〕55号</td><td>国家市场监督管理总局</td><td>-</td><td>2025-01-21</td><td>9999-12-31</td></tr><tr><td>不予禁止决定书</td><td>反执二审查决定〔2025〕5号</td><td>国家市场监督管理总局</td><td>-</td><td>2024-12-31</td><td>9999-12-31</td></tr><tr><td>不予禁止决定书</td><td>反执二审查决定〔2026〕48号</td><td>国家市场监督管理总局</td><td>-</td><td>2026-01-22</td><td>9999-12-31</td></tr><tr><td>准予许可</td><td>宁质监特准（2019）042号</td><td>宁德市市场监督管理局</td><td>-</td><td>2019-06-19</td><td>2099-12-31</td></tr><tr><td>准予许可决定书</td><td>梯12闽J0789（19）</td><td>宁德市市场监督管理局</td><td>-</td><td>2019-06-24</td><td>2099-12-31</td></tr><tr><td>行政许可决定书</td><td>宁质监特准[2019]055号</td><td>宁德市市场监督管理局</td><td>-</td><td>2019-07-15</td><td>2099-12-31</td></tr></tbody></table></div>
+<h3 class="biz-subsection-title">高新技术企业认证</h3><p class="biz-section-note">共 4 条，当前页展示 4 条</p><div class="table-wrap"><table><thead><tr><th>证书编号</th><th>资质类别</th><th>发证机构</th><th>颁证日期</th><th>截止日期</th><th>证书状态</th></tr></thead><tbody><tr><td>GR202335001336</td><td>高新技术企业</td><td>福建省认定机构办公室</td><td>2023-12-28</td><td>2026-12-28</td><td>有效</td></tr><tr><td>GR202035000100</td><td>高新技术企业</td><td>福建省认定机构办公室</td><td>2020-12-01</td><td>2023-12-01</td><td>过期</td></tr><tr><td>GR201735000071</td><td>高新技术企业</td><td>福建省认定机构办公室</td><td>2017-10-23</td><td>2020-10-23</td><td>过期</td></tr><tr><td>GR201435000085</td><td>高新技术企业</td><td>福建省认定机构办公室</td><td>2014-08-14</td><td>2017-08-14</td><td>过期</td></tr></tbody></table></div></section>
+    <section class="report-page biz-section"><div class="report-topbar"><div class="report-stripe"></div><div class="report-banner">资质大数据报告</div></div><div class="biz-section-head"><div><h2>代表性记录</h2><p class="biz-section-note">关键明细记录 Top N。</p></div><span class="biz-tag">Records</span></div><div class="table-wrap"><table><thead><tr><th>资质类型</th><th>资质级别</th><th>认定机关</th></tr></thead><tbody><tr><td>企业技术中心</td><td>省级</td><td>福建省工业和信息化厅</td></tr><tr><td>重点实验室</td><td>省级</td><td>浙江省科学技术厅</td></tr><tr><td>首台套</td><td>国家级</td><td>厦门市发展和改革委员会</td></tr><tr><td>工程技术研究中心</td><td>省级</td><td>福建省科学技术厅</td></tr><tr><td>高新技术企业</td><td>国家级</td><td>高新技术企业认定管理工作网</td></tr><tr><td>技术创新示范企业</td><td>国家级</td><td>工业和信息化部</td></tr><tr><td>技术创新示范企业</td><td>国家级</td><td>中华人民共和国工业和信息化部</td></tr><tr><td>重点实验室</td><td>省级</td><td>福建省科学技术厅</td></tr><tr><td>知识产权示范企业</td><td>国家级</td><td>国家知识产权局</td></tr><tr><td>制造业单项冠军企业</td><td>省级</td><td>青海省工业和信息化厅</td></tr><tr><td>高新技术企业认证</td><td>高新技术企业</td><td>福建省认定机构办公室</td></tr><tr><td>高新技术企业认证</td><td>高新技术企业</td><td>福建省认定机构办公室</td></tr><tr><td>高新技术企业认证</td><td>高新技术企业</td><td>福建省认定机构办公室</td></tr><tr><td>高新技术企业认证</td><td>高新技术企业</td><td>福建省认定机构办公室</td></tr></tbody></table></div></section>
     <section class="report-page biz-section"><div class="report-topbar"><div class="report-stripe"></div><div class="report-banner">资质大数据报告</div></div><div class="biz-section-head"><div><h2>特征与洞察</h2><p class="biz-section-note">基于数据的结构化解读。</p></div><span class="biz-tag">Insights</span></div><div class="structural-feature-grid"><article class="structural-feature-card">
   <h3>资质资产规模</h3>
-  <p class="structural-evidence">企业资质证书总数 22896。</p>
-  <p>证书总量反映企业资质积累的广度，是招投标、政策申报与商业合作的重要门槛指标。</p>
+  <p class="structural-evidence">企业资质证书总数 196。</p>
+  <p>该值仅描述上游返回的证书总量，不单独证明业务能力、投标资格或合作适配性。</p>
 </article><article class="structural-feature-card">
-  <h3>近期获证活跃度</h3>
-  <p class="structural-evidence">近一年获证 1575 项，占证书总量约 7%。</p>
-  <p>近期获证占比反映资质扩张节奏：占比高说明企业处于资质快速积累期（如新业务/新政策驱动），占比低则资质结构趋于稳定。</p>
+  <h3>近期获证观察</h3>
+  <p class="structural-evidence">近一年获证 25 项，占证书总量约 13%。</p>
+  <p>“近一年”沿用上游字段口径，当前响应未提供起止日期；该占比仅作数量观察，不推断扩张阶段或稳定程度。</p>
 </article><article class="structural-feature-card">
   <h3>高新技术资质</h3>
-  <p class="structural-evidence">高新技术企业认证记录 5 条 条。</p>
-  <p>高新技术企业资质是企业研发能力与税收优惠的重要依据；持续在有效期内说明企业研发投入稳定。</p>
+  <p class="structural-evidence">高新技术企业认证记录 4 条。</p>
+  <p>该值仅描述返回的认证记录数；研发情况、优惠适用和认证有效性需核验具体证书及主管部门记录。</p>
 </article><article class="structural-feature-card">
   <h3>资质类别集中度</h3>
-  <p class="structural-evidence">“行政许可”类资质占比约 94%，前 2 类合计 97%（CR2）。</p>
-  <p>资质类别集中度反映业务聚焦方向：CR2 偏高意味着资质集中于少数类别、专业化方向明确；CR2 偏低则代表业务线多元、跨领域布局。</p>
+  <p class="structural-evidence">“行政许可”类资质占比约 86%，前 2 类合计 94%（CR2）。</p>
+  <p>CR2 仅描述本次返回类别的数量集中程度，不能单独判断业务聚焦、专业化或多元化程度。</p>
 </article><article class="structural-feature-card">
   <h3>高新证书有效性</h3>
-  <p class="structural-evidence">高新证书 5 条中有效 1 条（20%）。</p>
-  <p>高新证书有效率直接影响企业享受税收优惠与政策红利的连续性；存在过期记录时建议尽快启动重新认定。</p>
+  <p class="structural-evidence">高新证书 4 条中有效 1 条（25%）。</p>
+  <p>该比例仅按返回记录中的状态文本计算；优惠适用、续期要求和实际效力需以主管部门记录为准。</p>
 </article><article class="structural-feature-card">
   <h3>资质类别覆盖</h3>
-  <p class="structural-evidence">涵盖证书类别约 78 类：环境标志产品、网络关键设备、强制性产品自我声明证书、运输资产保护协会 运输供应商最低安全要求认证、业务连续性管理体系、软件企业证书、网络安全专用产品、静电防护标准认证、温室气体排放和清除的量化和报告的规范及指南认证、电子信息产品污染控制自愿性认证、低压电器、软件产品证书、商用密码产品销售许可、煤矿安全标志、信息安全管理体系认证、电气与电子元件和产品有害物质过程控制管理体系认证、能源管理体系认证、无线电发射设备型号核准、环境管理体系认证、施工许可信息、CCC、其他、信息安全应急处理服务资质认证、其他自愿性工业产品认证、竣工验收备案信息、计算机信息系统安全专用产品销售许可证、排污登记信息、防爆电气、电信终端设备、供应链安全管理体系认证、所有未列明的其他管理体系认证、商用密码产品、在收费或合同基础上的生产服务、电器电子产品有害物质限制使用、企业知识产权管理体系认证、服务资质认证证书、商务部商务信用评级、测量管理体系、节能产品认证(不含建筑节能)、信息安全服务资质认证、中国职业健康安全管理体系认证、商品和服务在生命周期内的温室气体排放评价规范认证、网络关键设备和网络安全专用产品安全认证、无线局域网获证、音视频设备、家用和类似用途设备、售后服务认证、电信设备进网许可证、建设用地规划许可证、高新技术企业、质量管理体系认证(ISO9001)、信息技术设备、信息安全产品认证(未列入强制性产品认证目录内的信息安全产品)、商用密码产品品种和型号、金融中介、保险和辅助服务、电讯业质量管理体系认证、国家信息安全产品认证、排污许可证、国家保密局产品检测证书、运行维护、城市轨道交通产品认证、电路开关及保护或连接用电器装置、对外贸易经营备案、金融科技产品、安全防范产品、移动金融技术服务认证、电信业务经营许可证、铁路产品认证、非煤矿安全标志、金融科技产品(不含人民币现金机具)、光伏产品认证、信息技术服务管理体系认证、商品售后服务评价认证、碳披露类直接涉碳产品认证、守合同重信用、无线电发射设备型号核准证、可再生能源。</p>
-  <p>资质类别越分散，说明企业业务线越多元；类别集中则代表专业化方向明确。</p>
+  <p class="structural-evidence">涵盖证书类别约 20 类：两化融合管理体系、CMMI、能源管理体系认证、汽车行业质量管理体系认证、高新技术企业、对外贸易经营备案、在收费或合同基础上的生产服务、其他自愿性工业产品认证、环境管理体系认证、商品售后服务评价认证、信息技术设备、售后服务认证、食品经营许可证、储能型锂离子电池、中国职业健康安全管理体系认证、静电防护标准认证、信息安全管理体系认证、所有未列明的其他管理体系认证、排污许可证、质量管理体系认证(ISO9001)。</p>
+  <p>类别数量只描述返回证书的分类覆盖，不能单独推断业务线数量或专业化程度。</p>
 </article><article class="structural-feature-card">
   <h3>资质类别聚类</h3>
-  <p class="structural-evidence">企业资质按类别聚为 1 类，合计 10 项；其中“科技研发与创新类”占比约 100%，前 2 类合计 100%（CR2）。</p>
-  <p>资质类别聚类反映企业资质的政策定位：科技研发与创新类占比高通常意味着以技术创新为核心驱动；产业升级与转型类则反映传统产能升级方向。</p>
+  <p class="structural-evidence">企业资质按类别聚为 2 类，合计 7 项；其中“科技研发与创新类”占比约 86%，前 2 类合计 100%（CR2）。</p>
+  <p>聚类及 CR2 仅描述上游 qualificationClasses 的分布，不据此判断政策定位、经营驱动或转型方向。</p>
 </article><article class="structural-feature-card">
   <h3>高新技术领域覆盖</h3>
-  <p class="structural-evidence">覆盖 2 个高新技术领域（电子信息/航空航天/高技术服务/新能源与节能/先进制造与自动化等），“电子信息”覆盖最多（10 次）。</p>
-  <p>高新技术领域覆盖广度反映企业的技术辐射面：覆盖多领域通常意味着跨学科技术整合能力强，是综合型高技术企业的典型特征。</p>
+  <p class="structural-evidence">覆盖 2 个高新技术领域（电子信息/航空航天/高技术服务/新能源与节能/先进制造与自动化等），“新能源与节能”覆盖最多（7 次）。</p>
+  <p>领域数和覆盖次数仅描述 highTechIndustryList 的返回分布，不单独证明技术辐射面或跨领域整合水平。</p>
 </article><article class="structural-feature-card">
   <h3>获证年度趋势</h3>
-  <p class="structural-evidence">企业资质获证跨 3 个年度，峰值在“2023”（新增 5 项）。</p>
-  <p>获证年度趋势反映企业资质建设的投入节奏：某年集中爆发通常对应政策窗口期或重大认证批次；近年新增放缓则可能进入资质维护阶段。</p>
+  <p class="structural-evidence">企业资质获证跨 4 个年度，峰值在“2023”（新增 4 项）。</p>
+  <p>年度趋势仅按返回记录的 publishYear 汇总；未返回的年份不代表零，峰值也不证明政策、投入或维护阶段变化。</p>
 </article></div></section>
     <section class="report-page biz-section"><div class="report-topbar"><div class="report-stripe"></div><div class="report-banner">资质大数据报告</div></div><div class="biz-section-head"><div><h2>名词解释</h2><p class="biz-section-note">报告中涉及的专业术语与统计指标说明。</p></div><span class="biz-tag">Glossary</span></div><div class="glossary-list"><div class="glossary-row"><span class="glossary-term">CR2</span><span class="glossary-def">行业集中度指标（Concentration Ratio 2），指排名前 2 的类别合计占总量的百分比。含义同 CR3，但仅统计前 2 名。</span></div></div></section>
   </main>

@@ -1,0 +1,53 @@
+{
+  "metric_overflows": [],
+  "document_title": "宁德时代新能源科技股份有限公司 资质大数据报告",
+  "title_matches": true,
+  "charts": 4,
+  "rendered_charts": 4,
+  "zero_size_charts": 0,
+  "chart_details": [
+    {
+      "width": 984,
+      "height": 300,
+      "instance": true,
+      "renderer": true,
+      "graphics": 25
+    },
+    {
+      "width": 984,
+      "height": 300,
+      "instance": true,
+      "renderer": true,
+      "graphics": 13
+    },
+    {
+      "width": 984,
+      "height": 300,
+      "instance": true,
+      "renderer": true,
+      "graphics": 27
+    },
+    {
+      "width": 984,
+      "height": 300,
+      "instance": true,
+      "renderer": true,
+      "graphics": 35
+    }
+  ],
+  "page_width": 1905,
+  "viewport_width": 1920,
+  "empty_headers": 0,
+  "script_errors": [],
+  "external_resources": 0,
+  "external_asset_references": 0,
+  "ok": true,
+  "report_html_sha256": "775f6b01c0cfe7ab7ab16cdbffde4dc88d400327565f421b981560ed6b177b83",
+  "report_json_sha256": "3b403f1ce35daa748e933eb1d7c14cfaebdd5c9be801b61d13a1ba2097cb1125",
+  "skill": "qualification-skill",
+  "id": "03-hitech-cert",
+  "browser": "Ego Lite",
+  "space_id": 4,
+  "offline": true,
+  "checked_at": "2026-10-27T03:03:58.315Z"
+}

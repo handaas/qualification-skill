@@ -1,0 +1,54 @@
+{
+  "metric_overflows": [],
+  "document_title": "华为技术有限公司 资质大数据报告",
+  "title_matches": true,
+  "charts": 4,
+  "rendered_charts": 4,
+  "zero_size_charts": 0,
+  "chart_details": [
+    {
+      "width": 984,
+      "height": 300,
+      "instance": true,
+      "renderer": true,
+      "graphics": 25
+    },
+    {
+      "width": 984,
+      "height": 300,
+      "instance": true,
+      "renderer": true,
+      "graphics": 7
+    },
+    {
+      "width": 984,
+      "height": 300,
+      "instance": true,
+      "renderer": true,
+      "graphics": 23
+    },
+    {
+      "width": 984,
+      "height": 300,
+      "instance": true,
+      "renderer": true,
+      "graphics": 33
+    }
+  ],
+  "page_width": 1905,
+  "viewport_width": 1920,
+  "empty_headers": 0,
+  "script_errors": [],
+  "external_resources": 0,
+  "external_asset_references": 0,
+  "ok": true,
+  "report_html_sha256": "22fb0eee8d811f46ea65d165759b187c6c37a478fed679d8f551151bf5b3369c",
+  "report_json_sha256": "2583e8edd37e1acaf39f1c8bf506d3a11926a71e84ec868282ed9768070963f4",
+  "screenshot": "browser.png",
+  "skill": "qualification-skill",
+  "id": "01-supplier-cert",
+  "browser": "Ego Lite",
+  "space_id": 4,
+  "offline": true,
+  "checked_at": "2026-10-27T03:03:55.744Z"
+}

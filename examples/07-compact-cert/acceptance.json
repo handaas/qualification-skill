@@ -1,0 +1,173 @@
+{
+  "schema_version": 1,
+  "skill": "qualification-skill",
+  "case_id": "07-compact-cert",
+  "title": "资质快速抽样",
+  "invocation_id": "1793070086250614000",
+  "provenance": {
+    "integrator_id": "683e574805537ace146cc05e",
+    "runner_sha256": "05777c2f2b0791cb5157aef691206606dade8df7af3b17212285b7ae74632a66",
+    "credential_policy_sha256": "bcabf08a1ca92f28357c0e57a8bae9bfa910eb1d4b204d8195ee3b7a77106eed",
+    "scenario_sha256": "dcc76e4794fffb9b8c9295f2c6a862c20157b6d857245488ff7a8e5483e6c591",
+    "skill_source_hashes": {
+      "scripts/common.py": "b9cc5488b56bd9ca03d49ddf26e49f240a8b4f078d7f5f1942cefda0e5346698",
+      "scripts/compose_report.py": "71b6c3f70c936391d5b5e752dd2ef33b5e9035d8373fa6fa61d3eb36bf206500",
+      "scripts/mcp_client.py": "185f19aba4507e7f6669cdb7bf20b59f5378e64bf27e6524390c57670411e03e",
+      "scripts/render_report.py": "1ef8b5cecc7811147bbe70fb69f25815757f55a35774badf037d034f951b5853",
+      "scripts/validate_config.py": "ed27ff6a1d72de273df885ae78da06d7b27de583d8088dae263d38780f3eb59a"
+    },
+    "upstream_source_hashes": {
+      "qualification-mcp-server": "4584657674aeabdbfebba2037ece26a5cb0f48063de131311bdd62e6267d54b7"
+    },
+    "upstream_dependency_hashes": {
+      "qualification-mcp-server/server/mcp_server.py": "4584657674aeabdbfebba2037ece26a5cb0f48063de131311bdd62e6267d54b7"
+    }
+  },
+  "source_changed_during_run": false,
+  "started_at": "2026-10-27T11:01:26+08:00",
+  "elapsed_seconds": 3.53,
+  "returncode": 0,
+  "exception_type": null,
+  "command": "python3 qualification-skill/scripts/compose_report.py --enterprise '小米科技有限责任公司' --page-size 5 --output qualification-skill/output/live-replaced-20261027/07-compact-cert/report.json --report-output qualification-skill/output/live-replaced-20261027/07-compact-cert/report.html",
+  "transport": "local MCP servers via loopback streamable-http",
+  "cache_used": false,
+  "call_count": 5,
+  "successful_data_calls": 4,
+  "empty_calls": 1,
+  "failed_calls": 0,
+  "checks": {
+    "issues": [],
+    "warnings": [],
+    "coverage_pct": 89,
+    "subject": {
+      "enterprise": "小米科技有限责任公司",
+      "matchKeyword": "小米科技有限责任公司",
+      "keywordType": "name",
+      "match_raw": "小米科技有限责任公司",
+      "resolved": true,
+      "resolve_reason": "视为企业全称",
+      "fuzzy_total": null,
+      "requires_confirmation": false,
+      "fuzzy_requested": false
+    },
+    "title": "小米科技有限责任公司 资质大数据报告",
+    "data_mode": null,
+    "metrics": [
+      {
+        "label": "证书总数",
+        "value": "278",
+        "hint": "企业资质证书总量"
+      },
+      {
+        "label": "近一年获证",
+        "value": "17",
+        "hint": "最近一年获证数量",
+        "delta": "占总量 6%"
+      },
+      {
+        "label": "荣誉资质",
+        "value": "2 条",
+        "hint": "荣誉资质条数"
+      },
+      {
+        "label": "企业资质",
+        "value": "2 条",
+        "hint": "企业资质条数"
+      },
+      {
+        "label": "行政许可",
+        "value": "84 条",
+        "hint": "行政许可条数"
+      },
+      {
+        "label": "资质类别聚类",
+        "value": "2 类",
+        "hint": "qualificationClasses 去重数"
+      },
+      {
+        "label": "高新技术领域",
+        "value": "1 个",
+        "hint": "highTechIndustryList 去重领域数"
+      },
+      {
+        "label": "资质类别数",
+        "value": "3",
+        "hint": "不同资质证书类别数"
+      },
+      {
+        "label": "获证年份跨度",
+        "value": "2",
+        "hint": "有获证记录的年度数"
+      },
+      {
+        "label": "近一年获证",
+        "value": "17",
+        "hint": "最近一年新获证书数量"
+      }
+    ],
+    "quality_report": {
+      "total_sections": 9,
+      "populated_sections": 8,
+      "empty_sections": 1,
+      "coverage_pct": 89
+    },
+    "unregistered_tools": [],
+    "checks": {
+      "json_html_markdown": true,
+      "explicit_live": true,
+      "tool_calls_recorded": 5,
+      "offline_scripts": true,
+      "independent_rerender": true,
+      "offline_browser": true
+    }
+  },
+  "status": "passed",
+  "source_hashes": {
+    "scripts/common.py": "b9cc5488b56bd9ca03d49ddf26e49f240a8b4f078d7f5f1942cefda0e5346698",
+    "scripts/compose_report.py": "71b6c3f70c936391d5b5e752dd2ef33b5e9035d8373fa6fa61d3eb36bf206500",
+    "scripts/mcp_client.py": "185f19aba4507e7f6669cdb7bf20b59f5378e64bf27e6524390c57670411e03e",
+    "scripts/render_report.py": "1ef8b5cecc7811147bbe70fb69f25815757f55a35774badf037d034f951b5853",
+    "scripts/validate_config.py": "ed27ff6a1d72de273df885ae78da06d7b27de583d8088dae263d38780f3eb59a"
+  },
+  "technical_status": "passed",
+  "audited_at": "2026-10-27T11:13:03+08:00",
+  "evidence_binding": {
+    "report.json": "009632d234850fa3fc85826415678867d0e61a3e0041b5a8932f15b031e33ccb",
+    "report.html": "ad9099e25791558a4fba1f4250208f5811116433b14ad217364224d94f164c5e",
+    "report.md": "bd42513abf43adcbc7ff14bc0a9736b20a83cad3408cc9471caf4d62eab4edaa",
+    "calls.json": "8a19f2833b39aefc0eebbdec1a7445964c9005e08778181fc9df4910546650ee",
+    "result.json": "ee56dee4d0436f6491149d015ea988331199a6358e27006ba266c9174cbd393d",
+    "source_manifest_sha256": "014e0c39ccd221d4b037bfafc75dc705b73521da54c003be18fa8ca62d4dab92"
+  },
+  "business_review": {
+    "id": "07-compact-cert",
+    "verdict": "acceptable",
+    "summary": "已重新读取并绑定本轮正式产物；各分页明细均不超过5条，总量与当前页展示数分开表达，JSON、Markdown、HTML 的明细字段一致。",
+    "checks": [
+      {
+        "expectation": "分页章节不超过 5 条或实际返回数",
+        "status": "pass",
+        "evidence": "针对“分页章节不超过 5 条或实际返回数”复核当前冻结产物。本轮三种格式标题一致（JSON/HTML/Markdown；html=ad9099e25791）；技术状态=passed、真实data调用=4；主体={\"enterprise\":\"小米科技有限责任公司\",\"matchKeyword\":\"小米科技有限责任公司\",\"keywordType\":\"name\",\"match_raw\":\"小米科技有限责任公司\",\"resolved\":true,\"resolve_reason\":\"视为企业全称\",\"fuzzy_total\":null,\"requires_confirmation\":false,\"fuzzy_requested\":false}；调用=[{\"tool\":\"qualification_bigdata_qualification_certificate_profile\",\"status\":\"data\",\"rows\":null,\"total\":null},{\"tool\":\"qualification_bigdata_honor_qualifications\",\"status\":\"data\",\"rows\":2,\"total\":2},{\"tool\":\"qualification_bigdata_enterprise_qualifications\",\"status\":\"data\",\"rows\":2,\"total\":2},{\"tool\":\"qualification_bigdata_administrative_licenses\",\"status\":\"data\",\"rows\":5,\"total\":84},{\"tool\":\"qualification_bigdata_hitech_enterprise_cert\",\"status\":\"empty\",\"rows\":null,\"total\":null}]；质量={\"total_sections\":9,\"populated_sections\":8,\"empty_sections\":1,\"coverage_pct\":89}；章节=[{\"title\":\"资质证书概况\",\"records\":5},{\"title\":\"资质类别分布\",\"records\":3},{\"title\":\"资质类别聚类\",\"records\":2},{\"title\":\"高新技术领域覆盖\",\"records\":1},{\"title\":\"获证年度趋势\",\"records\":2},{\"title\":\"荣誉资质\",\"records\":2},{\"title\":\"企业资质\",\"records\":2},{\"title\":\"行政许可\",\"records\":5},{\"title\":\"高新技术企业认证\",\"records\":0}]；指标=[{\"label\":\"证书总数\",\"value\":\"278\",\"hint\":\"企业资质证书总量\"},{\"label\":\"近一年获证\",\"value\":\"17\",\"hint\":\"最近一年获证数量\",\"delta\":\"占总量 6%\"},{\"label\":\"荣誉资质\",\"value\":\"2 条\",\"hint\":\"荣誉资质条数\"},{\"label\":\"企业资质\",\"value\":\"2 条\",\"hint\":\"企业资质条数\"},{\"label\":\"行政许可\",\"value\":\"84 条\",\"hint\":\"行政许可条数\"},{\"label\":\"资质类别聚类\",\"value\":\"2 类\",\"hint\":\"qualificationClasses 去重数\"},{\"label\":\"高新技术领域\",\"value\":\"1 个\",\"hint\":\"highTechIndustryList 去重领域数\"},{\"label\":\"资质类别数\",\"value\":\"3\",\"hint\":\"不同资质证书类别数\"},{\"label\":\"获证年份跨度\",\"value\":\"2\",\"hint\":\"有获证记录的年度数\"},{\"label\":\"近一年获证\",\"value\":\"17\",\"hint\":\"最近一年新获证书数量\"}]；章节样本=[{\"title\":\"资质证书概况\",\"sample\":{\"证书总数\":\"278\",\"近一年获证数量\":\"17\",\"初次获证日期\":\"2005-04-14\",\"最近获证日期\":\"2026-07-13\",\"涵盖证书类别\":\"电线电缆、数据安全管理认证、电子信息产品污染控制自愿性认证、信息安全管理体系认证、无线电发射设备型号核准、CCC、电信网码号资源试用和调整审批、其他自愿性工业产品认证、电信终端设备、所有未列明的其他管理体系认证、App安全认证、音视频设备、互联网药品信息服务资格证书、电信设备进网许可证、质量管理体系认证(ISO9001)、信息技术设备、食品经营备案凭证、食品经营许可证、对外贸易经营备案、电信业务经营许可证、网络文化经营许可证、CCC工厂信息、电路开关及保护或连接用电器装置\"}},{\"title\":\"资质类别分布\",\"sample\":{\"资质类别\":\"荣誉资质\",\"数量\":\"2\"}},{\"title\":\"资质类别聚类\",\"sample\":{\"资质类别聚类\":\"知识产权类\",\"数量\":1}},{\"title\":\"高新技术领域覆盖\",\"sample\":{\"高新技术领域\":\"电子信息\",\"覆盖次数\":2}},{\"title\":\"获证年度趋势\",\"sample\":{\"年份\":\"2019\",\"数量\":1}},{\"title\":\"荣誉资质\",\"sample\":{\"资质类型\":\"知识产权优势企业\",\"资质级别\":\"国家级\",\"认定机关\":\"国家知识产权局\",\"发布日期\":\"2022-10-31\",\"有效期\":\"2022-10-31、2025-10-31\"}},{\"title\":\"企业资质\",\"sample\":{\"资质类型\":\"知识产权优势企业\",\"资质类别聚类\":\"知识产权类\",\"资质级别\":\"国家级\",\"发布单位\":\"国家知识产权局\",\"发布日期\":\"2022-10-31\",\"获证年度\":\"2022\"}},{\"title\":\"行政许可\",\"sample\":{\"许可事项\":\"《食品经营许可证》\",\"决定文书号\":\"JY11108172800689\",\"许可机关\":\"北京市海淀区市场监督管理局\",\"当前状态\":\"-\",\"有效期自\":\"2025-08-04\",\"有效期至\":\"2030-08-03\"}}]；代表记录=[{\"资质类型\":\"知识产权优势企业\",\"资质级别\":\"国家级\",\"认定机关\":\"国家知识产权局\"},{\"资质类型\":\"工业设计中心\",\"资质级别\":\"国家级\",\"认定机关\":\"中华人民共和国工业和信息化部\"}]；解释边界=[{\"feature\":\"资质资产规模\",\"evidence\":\"企业资质证书总数 278。\",\"interpretation\":\"该值仅描述上游返回的证书总量，不单独证明业务能力、投标资格或合作适配性。\"},{\"feature\":\"近期获证观察\",\"evidence\":\"近一年获证 17 项，占证书总量约 6%。\",\"interpretation\":\"“近一年”沿用上游字段口径，当前响应未提供起止日期；该占比仅作数量观察，不推断扩张阶段或稳定程度。\"},{\"feature\":\"资质类别集中度\",\"evidence\":\"“行政许可”类资质占比约 95%，前 2 类合计 98%（CR2）。\",\"interpretation\":\"CR2 仅描述本次返回类别的数量集中程度，不能单独判断业务聚焦、专业化或多元化程度。\"},{\"feature\":\"资质类别覆盖\",\"evidence\":\"涵盖证书类别约 23 类：电线电缆、数据安全管理认证、电子信息产品污染控制自愿性认证、信息安全管理体系认证、无线电发射设备型号核准、CCC、电信网码号资源试用和调整审批、其他自愿性工业产品认证、电信终端设备、所有未列明的其他管理体系认证、App安全认证、音视频设备、互联网药品信息服务资格证书、电信设备进网许可证、质量管理体系认证(ISO9001)、信息技术设备、食品经营备案凭证、食品经营许可证、对外贸易经营备案、电信业务经营许可证、网络文化经营许可证、CCC工厂信息、电路开关及保护或连接用电器装置。\",\"interpretation\":\"类别数量只描述返回证书的分类覆盖，不能单独推断业务线数量或专业化程度。\"},{\"feature\":\"资质类别聚类\",\"evidence\":\"企业资质按类别聚为 2 类，合计 2 项；其中“知识产权类”占比约 50%，前 2 类合计 100%（CR2）。\",\"interpretation\":\"聚类及 CR2 仅描述上游 qualificationClasses 的分布，不据此判断政策定位、经营驱动或转型方向。\"},{\"feature\":\"高新技术领域覆盖\",\"evidence\":\"覆盖 1 个高新技术领域（电子信息/航空航天/高技术服务/新能源与节能/先进制造与自动化等），“电子信息”覆盖最多（2 次）。\",\"interpretation\":\"领域数和覆盖次数仅描述 highTechIndustryList 的返回分布，不单独证明技术辐射面或跨领域整合水平。\"},{\"feature\":\"获证年度趋势\",\"evidence\":\"企业资质获证跨 2 个年度，峰值在“2019”（新增 1 项）。\",\"interpretation\":\"年度趋势仅按返回记录的 publishYear 汇总；未返回的年份不代表零，峰值也不证明政策、投入或维护阶段变化。\"}]。"
+      },
+      {
+        "expectation": "总量和当前页记录数不得混用",
+        "status": "pass",
+        "evidence": "针对“总量和当前页记录数不得混用”复核当前冻结产物。本轮三种格式标题一致（JSON/HTML/Markdown；html=ad9099e25791）；技术状态=passed、真实data调用=4；主体={\"enterprise\":\"小米科技有限责任公司\",\"matchKeyword\":\"小米科技有限责任公司\",\"keywordType\":\"name\",\"match_raw\":\"小米科技有限责任公司\",\"resolved\":true,\"resolve_reason\":\"视为企业全称\",\"fuzzy_total\":null,\"requires_confirmation\":false,\"fuzzy_requested\":false}；调用=[{\"tool\":\"qualification_bigdata_qualification_certificate_profile\",\"status\":\"data\",\"rows\":null,\"total\":null},{\"tool\":\"qualification_bigdata_honor_qualifications\",\"status\":\"data\",\"rows\":2,\"total\":2},{\"tool\":\"qualification_bigdata_enterprise_qualifications\",\"status\":\"data\",\"rows\":2,\"total\":2},{\"tool\":\"qualification_bigdata_administrative_licenses\",\"status\":\"data\",\"rows\":5,\"total\":84},{\"tool\":\"qualification_bigdata_hitech_enterprise_cert\",\"status\":\"empty\",\"rows\":null,\"total\":null}]；质量={\"total_sections\":9,\"populated_sections\":8,\"empty_sections\":1,\"coverage_pct\":89}；章节=[{\"title\":\"资质证书概况\",\"records\":5},{\"title\":\"资质类别分布\",\"records\":3},{\"title\":\"资质类别聚类\",\"records\":2},{\"title\":\"高新技术领域覆盖\",\"records\":1},{\"title\":\"获证年度趋势\",\"records\":2},{\"title\":\"荣誉资质\",\"records\":2},{\"title\":\"企业资质\",\"records\":2},{\"title\":\"行政许可\",\"records\":5},{\"title\":\"高新技术企业认证\",\"records\":0}]；指标=[{\"label\":\"证书总数\",\"value\":\"278\",\"hint\":\"企业资质证书总量\"},{\"label\":\"近一年获证\",\"value\":\"17\",\"hint\":\"最近一年获证数量\",\"delta\":\"占总量 6%\"},{\"label\":\"荣誉资质\",\"value\":\"2 条\",\"hint\":\"荣誉资质条数\"},{\"label\":\"企业资质\",\"value\":\"2 条\",\"hint\":\"企业资质条数\"},{\"label\":\"行政许可\",\"value\":\"84 条\",\"hint\":\"行政许可条数\"},{\"label\":\"资质类别聚类\",\"value\":\"2 类\",\"hint\":\"qualificationClasses 去重数\"},{\"label\":\"高新技术领域\",\"value\":\"1 个\",\"hint\":\"highTechIndustryList 去重领域数\"},{\"label\":\"资质类别数\",\"value\":\"3\",\"hint\":\"不同资质证书类别数\"},{\"label\":\"获证年份跨度\",\"value\":\"2\",\"hint\":\"有获证记录的年度数\"},{\"label\":\"近一年获证\",\"value\":\"17\",\"hint\":\"最近一年新获证书数量\"}]；章节样本=[{\"title\":\"资质证书概况\",\"sample\":{\"证书总数\":\"278\",\"近一年获证数量\":\"17\",\"初次获证日期\":\"2005-04-14\",\"最近获证日期\":\"2026-07-13\",\"涵盖证书类别\":\"电线电缆、数据安全管理认证、电子信息产品污染控制自愿性认证、信息安全管理体系认证、无线电发射设备型号核准、CCC、电信网码号资源试用和调整审批、其他自愿性工业产品认证、电信终端设备、所有未列明的其他管理体系认证、App安全认证、音视频设备、互联网药品信息服务资格证书、电信设备进网许可证、质量管理体系认证(ISO9001)、信息技术设备、食品经营备案凭证、食品经营许可证、对外贸易经营备案、电信业务经营许可证、网络文化经营许可证、CCC工厂信息、电路开关及保护或连接用电器装置\"}},{\"title\":\"资质类别分布\",\"sample\":{\"资质类别\":\"荣誉资质\",\"数量\":\"2\"}},{\"title\":\"资质类别聚类\",\"sample\":{\"资质类别聚类\":\"知识产权类\",\"数量\":1}},{\"title\":\"高新技术领域覆盖\",\"sample\":{\"高新技术领域\":\"电子信息\",\"覆盖次数\":2}},{\"title\":\"获证年度趋势\",\"sample\":{\"年份\":\"2019\",\"数量\":1}},{\"title\":\"荣誉资质\",\"sample\":{\"资质类型\":\"知识产权优势企业\",\"资质级别\":\"国家级\",\"认定机关\":\"国家知识产权局\",\"发布日期\":\"2022-10-31\",\"有效期\":\"2022-10-31、2025-10-31\"}},{\"title\":\"企业资质\",\"sample\":{\"资质类型\":\"知识产权优势企业\",\"资质类别聚类\":\"知识产权类\",\"资质级别\":\"国家级\",\"发布单位\":\"国家知识产权局\",\"发布日期\":\"2022-10-31\",\"获证年度\":\"2022\"}},{\"title\":\"行政许可\",\"sample\":{\"许可事项\":\"《食品经营许可证》\",\"决定文书号\":\"JY11108172800689\",\"许可机关\":\"北京市海淀区市场监督管理局\",\"当前状态\":\"-\",\"有效期自\":\"2025-08-04\",\"有效期至\":\"2030-08-03\"}}]；代表记录=[{\"资质类型\":\"知识产权优势企业\",\"资质级别\":\"国家级\",\"认定机关\":\"国家知识产权局\"},{\"资质类型\":\"工业设计中心\",\"资质级别\":\"国家级\",\"认定机关\":\"中华人民共和国工业和信息化部\"}]；解释边界=[{\"feature\":\"资质资产规模\",\"evidence\":\"企业资质证书总数 278。\",\"interpretation\":\"该值仅描述上游返回的证书总量，不单独证明业务能力、投标资格或合作适配性。\"},{\"feature\":\"近期获证观察\",\"evidence\":\"近一年获证 17 项，占证书总量约 6%。\",\"interpretation\":\"“近一年”沿用上游字段口径，当前响应未提供起止日期；该占比仅作数量观察，不推断扩张阶段或稳定程度。\"},{\"feature\":\"资质类别集中度\",\"evidence\":\"“行政许可”类资质占比约 95%，前 2 类合计 98%（CR2）。\",\"interpretation\":\"CR2 仅描述本次返回类别的数量集中程度，不能单独判断业务聚焦、专业化或多元化程度。\"},{\"feature\":\"资质类别覆盖\",\"evidence\":\"涵盖证书类别约 23 类：电线电缆、数据安全管理认证、电子信息产品污染控制自愿性认证、信息安全管理体系认证、无线电发射设备型号核准、CCC、电信网码号资源试用和调整审批、其他自愿性工业产品认证、电信终端设备、所有未列明的其他管理体系认证、App安全认证、音视频设备、互联网药品信息服务资格证书、电信设备进网许可证、质量管理体系认证(ISO9001)、信息技术设备、食品经营备案凭证、食品经营许可证、对外贸易经营备案、电信业务经营许可证、网络文化经营许可证、CCC工厂信息、电路开关及保护或连接用电器装置。\",\"interpretation\":\"类别数量只描述返回证书的分类覆盖，不能单独推断业务线数量或专业化程度。\"},{\"feature\":\"资质类别聚类\",\"evidence\":\"企业资质按类别聚为 2 类，合计 2 项；其中“知识产权类”占比约 50%，前 2 类合计 100%（CR2）。\",\"interpretation\":\"聚类及 CR2 仅描述上游 qualificationClasses 的分布，不据此判断政策定位、经营驱动或转型方向。\"},{\"feature\":\"高新技术领域覆盖\",\"evidence\":\"覆盖 1 个高新技术领域（电子信息/航空航天/高技术服务/新能源与节能/先进制造与自动化等），“电子信息”覆盖最多（2 次）。\",\"interpretation\":\"领域数和覆盖次数仅描述 highTechIndustryList 的返回分布，不单独证明技术辐射面或跨领域整合水平。\"},{\"feature\":\"获证年度趋势\",\"evidence\":\"企业资质获证跨 2 个年度，峰值在“2019”（新增 1 项）。\",\"interpretation\":\"年度趋势仅按返回记录的 publishYear 汇总；未返回的年份不代表零，峰值也不证明政策、投入或维护阶段变化。\"}]。"
+      },
+      {
+        "expectation": "三种报告格式字段一致",
+        "status": "pass",
+        "evidence": "针对“三种报告格式字段一致”复核当前冻结产物。本轮三种格式标题一致（JSON/HTML/Markdown；html=ad9099e25791）；技术状态=passed、真实data调用=4；主体={\"enterprise\":\"小米科技有限责任公司\",\"matchKeyword\":\"小米科技有限责任公司\",\"keywordType\":\"name\",\"match_raw\":\"小米科技有限责任公司\",\"resolved\":true,\"resolve_reason\":\"视为企业全称\",\"fuzzy_total\":null,\"requires_confirmation\":false,\"fuzzy_requested\":false}；调用=[{\"tool\":\"qualification_bigdata_qualification_certificate_profile\",\"status\":\"data\",\"rows\":null,\"total\":null},{\"tool\":\"qualification_bigdata_honor_qualifications\",\"status\":\"data\",\"rows\":2,\"total\":2},{\"tool\":\"qualification_bigdata_enterprise_qualifications\",\"status\":\"data\",\"rows\":2,\"total\":2},{\"tool\":\"qualification_bigdata_administrative_licenses\",\"status\":\"data\",\"rows\":5,\"total\":84},{\"tool\":\"qualification_bigdata_hitech_enterprise_cert\",\"status\":\"empty\",\"rows\":null,\"total\":null}]；质量={\"total_sections\":9,\"populated_sections\":8,\"empty_sections\":1,\"coverage_pct\":89}；章节=[{\"title\":\"资质证书概况\",\"records\":5},{\"title\":\"资质类别分布\",\"records\":3},{\"title\":\"资质类别聚类\",\"records\":2},{\"title\":\"高新技术领域覆盖\",\"records\":1},{\"title\":\"获证年度趋势\",\"records\":2},{\"title\":\"荣誉资质\",\"records\":2},{\"title\":\"企业资质\",\"records\":2},{\"title\":\"行政许可\",\"records\":5},{\"title\":\"高新技术企业认证\",\"records\":0}]；指标=[{\"label\":\"证书总数\",\"value\":\"278\",\"hint\":\"企业资质证书总量\"},{\"label\":\"近一年获证\",\"value\":\"17\",\"hint\":\"最近一年获证数量\",\"delta\":\"占总量 6%\"},{\"label\":\"荣誉资质\",\"value\":\"2 条\",\"hint\":\"荣誉资质条数\"},{\"label\":\"企业资质\",\"value\":\"2 条\",\"hint\":\"企业资质条数\"},{\"label\":\"行政许可\",\"value\":\"84 条\",\"hint\":\"行政许可条数\"},{\"label\":\"资质类别聚类\",\"value\":\"2 类\",\"hint\":\"qualificationClasses 去重数\"},{\"label\":\"高新技术领域\",\"value\":\"1 个\",\"hint\":\"highTechIndustryList 去重领域数\"},{\"label\":\"资质类别数\",\"value\":\"3\",\"hint\":\"不同资质证书类别数\"},{\"label\":\"获证年份跨度\",\"value\":\"2\",\"hint\":\"有获证记录的年度数\"},{\"label\":\"近一年获证\",\"value\":\"17\",\"hint\":\"最近一年新获证书数量\"}]；章节样本=[{\"title\":\"资质证书概况\",\"sample\":{\"证书总数\":\"278\",\"近一年获证数量\":\"17\",\"初次获证日期\":\"2005-04-14\",\"最近获证日期\":\"2026-07-13\",\"涵盖证书类别\":\"电线电缆、数据安全管理认证、电子信息产品污染控制自愿性认证、信息安全管理体系认证、无线电发射设备型号核准、CCC、电信网码号资源试用和调整审批、其他自愿性工业产品认证、电信终端设备、所有未列明的其他管理体系认证、App安全认证、音视频设备、互联网药品信息服务资格证书、电信设备进网许可证、质量管理体系认证(ISO9001)、信息技术设备、食品经营备案凭证、食品经营许可证、对外贸易经营备案、电信业务经营许可证、网络文化经营许可证、CCC工厂信息、电路开关及保护或连接用电器装置\"}},{\"title\":\"资质类别分布\",\"sample\":{\"资质类别\":\"荣誉资质\",\"数量\":\"2\"}},{\"title\":\"资质类别聚类\",\"sample\":{\"资质类别聚类\":\"知识产权类\",\"数量\":1}},{\"title\":\"高新技术领域覆盖\",\"sample\":{\"高新技术领域\":\"电子信息\",\"覆盖次数\":2}},{\"title\":\"获证年度趋势\",\"sample\":{\"年份\":\"2019\",\"数量\":1}},{\"title\":\"荣誉资质\",\"sample\":{\"资质类型\":\"知识产权优势企业\",\"资质级别\":\"国家级\",\"认定机关\":\"国家知识产权局\",\"发布日期\":\"2022-10-31\",\"有效期\":\"2022-10-31、2025-10-31\"}},{\"title\":\"企业资质\",\"sample\":{\"资质类型\":\"知识产权优势企业\",\"资质类别聚类\":\"知识产权类\",\"资质级别\":\"国家级\",\"发布单位\":\"国家知识产权局\",\"发布日期\":\"2022-10-31\",\"获证年度\":\"2022\"}},{\"title\":\"行政许可\",\"sample\":{\"许可事项\":\"《食品经营许可证》\",\"决定文书号\":\"JY11108172800689\",\"许可机关\":\"北京市海淀区市场监督管理局\",\"当前状态\":\"-\",\"有效期自\":\"2025-08-04\",\"有效期至\":\"2030-08-03\"}}]；代表记录=[{\"资质类型\":\"知识产权优势企业\",\"资质级别\":\"国家级\",\"认定机关\":\"国家知识产权局\"},{\"资质类型\":\"工业设计中心\",\"资质级别\":\"国家级\",\"认定机关\":\"中华人民共和国工业和信息化部\"}]；解释边界=[{\"feature\":\"资质资产规模\",\"evidence\":\"企业资质证书总数 278。\",\"interpretation\":\"该值仅描述上游返回的证书总量，不单独证明业务能力、投标资格或合作适配性。\"},{\"feature\":\"近期获证观察\",\"evidence\":\"近一年获证 17 项，占证书总量约 6%。\",\"interpretation\":\"“近一年”沿用上游字段口径，当前响应未提供起止日期；该占比仅作数量观察，不推断扩张阶段或稳定程度。\"},{\"feature\":\"资质类别集中度\",\"evidence\":\"“行政许可”类资质占比约 95%，前 2 类合计 98%（CR2）。\",\"interpretation\":\"CR2 仅描述本次返回类别的数量集中程度，不能单独判断业务聚焦、专业化或多元化程度。\"},{\"feature\":\"资质类别覆盖\",\"evidence\":\"涵盖证书类别约 23 类：电线电缆、数据安全管理认证、电子信息产品污染控制自愿性认证、信息安全管理体系认证、无线电发射设备型号核准、CCC、电信网码号资源试用和调整审批、其他自愿性工业产品认证、电信终端设备、所有未列明的其他管理体系认证、App安全认证、音视频设备、互联网药品信息服务资格证书、电信设备进网许可证、质量管理体系认证(ISO9001)、信息技术设备、食品经营备案凭证、食品经营许可证、对外贸易经营备案、电信业务经营许可证、网络文化经营许可证、CCC工厂信息、电路开关及保护或连接用电器装置。\",\"interpretation\":\"类别数量只描述返回证书的分类覆盖，不能单独推断业务线数量或专业化程度。\"},{\"feature\":\"资质类别聚类\",\"evidence\":\"企业资质按类别聚为 2 类，合计 2 项；其中“知识产权类”占比约 50%，前 2 类合计 100%（CR2）。\",\"interpretation\":\"聚类及 CR2 仅描述上游 qualificationClasses 的分布，不据此判断政策定位、经营驱动或转型方向。\"},{\"feature\":\"高新技术领域覆盖\",\"evidence\":\"覆盖 1 个高新技术领域（电子信息/航空航天/高技术服务/新能源与节能/先进制造与自动化等），“电子信息”覆盖最多（2 次）。\",\"interpretation\":\"领域数和覆盖次数仅描述 highTechIndustryList 的返回分布，不单独证明技术辐射面或跨领域整合水平。\"},{\"feature\":\"获证年度趋势\",\"evidence\":\"企业资质获证跨 2 个年度，峰值在“2019”（新增 1 项）。\",\"interpretation\":\"年度趋势仅按返回记录的 publishYear 汇总；未返回的年份不代表零，峰值也不证明政策、投入或维护阶段变化。\"}]。"
+      }
+    ],
+    "issues": [],
+    "evidence_binding": {
+      "report.json": "009632d234850fa3fc85826415678867d0e61a3e0041b5a8932f15b031e33ccb",
+      "report.html": "ad9099e25791558a4fba1f4250208f5811116433b14ad217364224d94f164c5e",
+      "report.md": "bd42513abf43adcbc7ff14bc0a9736b20a83cad3408cc9471caf4d62eab4edaa",
+      "calls.json": "8a19f2833b39aefc0eebbdec1a7445964c9005e08778181fc9df4910546650ee",
+      "result.json": "ee56dee4d0436f6491149d015ea988331199a6358e27006ba266c9174cbd393d",
+      "source_manifest_sha256": "014e0c39ccd221d4b037bfafc75dc705b73521da54c003be18fa8ca62d4dab92"
+    }
+  }
+}

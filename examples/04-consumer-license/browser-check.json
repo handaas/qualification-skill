@@ -1,0 +1,46 @@
+{
+  "metric_overflows": [],
+  "document_title": "贵州茅台酒股份有限公司 资质大数据报告",
+  "title_matches": true,
+  "charts": 3,
+  "rendered_charts": 3,
+  "zero_size_charts": 0,
+  "chart_details": [
+    {
+      "width": 984,
+      "height": 300,
+      "instance": true,
+      "renderer": true,
+      "graphics": 19
+    },
+    {
+      "width": 984,
+      "height": 300,
+      "instance": true,
+      "renderer": true,
+      "graphics": 13
+    },
+    {
+      "width": 984,
+      "height": 300,
+      "instance": true,
+      "renderer": true,
+      "graphics": 25
+    }
+  ],
+  "page_width": 1905,
+  "viewport_width": 1920,
+  "empty_headers": 0,
+  "script_errors": [],
+  "external_resources": 0,
+  "external_asset_references": 0,
+  "ok": true,
+  "report_html_sha256": "cc02c5e103c0b1253dfdea1efdb5ec5c2f863fbedd3392d9d625e26d6c2f375d",
+  "report_json_sha256": "4de7f37fc9c5b0546a9dcd09afb8e4991e2b3355ccc25f9613652f3c318c91d7",
+  "skill": "qualification-skill",
+  "id": "04-consumer-license",
+  "browser": "Ego Lite",
+  "space_id": 4,
+  "offline": true,
+  "checked_at": "2026-10-27T03:03:59.487Z"
+}

@@ -1,0 +1,165 @@
+[
+  {
+    "tool": "qualification_bigdata_qualification_certificate_profile",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "宁德时代新能源科技股份有限公司",
+      "keywordType": "name"
+    },
+    "invocation_id": "1793070080818838000",
+    "elapsed_seconds": 1.395,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "certFirstPublishTime",
+      "certLastPublishTime",
+      "certNumberThisYear",
+      "certTypeList",
+      "certificateCount"
+    ],
+    "row_count": null,
+    "reported_total": null,
+    "numeric_evidence": [
+      {
+        "path": "certNumberThisYear",
+        "value": 25
+      },
+      {
+        "path": "certificateCount",
+        "value": 196
+      }
+    ],
+    "response_sha256": "3eb35e627a7b100ee8af39e77e81476533bfa01c1857812ad24ea2379c035174"
+  },
+  {
+    "tool": "qualification_bigdata_honor_qualifications",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "宁德时代新能源科技股份有限公司",
+      "keywordType": "name"
+    },
+    "invocation_id": "1793070080818838000",
+    "elapsed_seconds": 1.553,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "resultList",
+      "total"
+    ],
+    "row_count": 10,
+    "reported_total": 18,
+    "numeric_evidence": [
+      {
+        "path": "total",
+        "value": 18
+      }
+    ],
+    "response_sha256": "ea4d9d28c798c6bd8ef672bb193a500393983e1b2c59332eb24129885459554b"
+  },
+  {
+    "tool": "qualification_bigdata_enterprise_qualifications",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "宁德时代新能源科技股份有限公司",
+      "keywordType": "name",
+      "pageIndex": 1,
+      "pageSize": 8
+    },
+    "invocation_id": "1793070080818838000",
+    "elapsed_seconds": 0.719,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "resultList",
+      "total"
+    ],
+    "row_count": 8,
+    "reported_total": 26,
+    "numeric_evidence": [
+      {
+        "path": "resultList[0].publishYear",
+        "value": 2026
+      },
+      {
+        "path": "resultList[1].publishYear",
+        "value": 2026
+      },
+      {
+        "path": "resultList[2].publishYear",
+        "value": 2024
+      },
+      {
+        "path": "resultList[3].publishYear",
+        "value": 2025
+      },
+      {
+        "path": "resultList[4].publishYear",
+        "value": 2023
+      },
+      {
+        "path": "total",
+        "value": 26
+      }
+    ],
+    "response_sha256": "c0a21b30dca15da2e54b2379f80f71160284767bf03570a3d285c0f626598d80"
+  },
+  {
+    "tool": "qualification_bigdata_administrative_licenses",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "宁德时代新能源科技股份有限公司",
+      "keywordType": "name",
+      "pageIndex": 1,
+      "pageSize": 8
+    },
+    "invocation_id": "1793070080818838000",
+    "elapsed_seconds": 0.617,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "resultList",
+      "total"
+    ],
+    "row_count": 8,
+    "reported_total": 304,
+    "numeric_evidence": [
+      {
+        "path": "total",
+        "value": 304
+      }
+    ],
+    "response_sha256": "fc7b21c1378e714dceed8ea6922df7e1f81d1eb32a4976d7b0756b61247577a0"
+  },
+  {
+    "tool": "qualification_bigdata_hitech_enterprise_cert",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "宁德时代新能源科技股份有限公司",
+      "keywordType": "name",
+      "pageIndex": 1,
+      "pageSize": 8
+    },
+    "invocation_id": "1793070080818838000",
+    "elapsed_seconds": 0.825,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "resultList",
+      "total"
+    ],
+    "row_count": 4,
+    "reported_total": 4,
+    "numeric_evidence": [
+      {
+        "path": "total",
+        "value": 4
+      }
+    ],
+    "response_sha256": "1d683609af8ae089900b42b50dcb2aa83bde6b6601ba32fcdebae2e9c630312c"
+  }
+]

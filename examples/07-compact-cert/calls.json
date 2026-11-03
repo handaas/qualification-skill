@@ -1,0 +1,147 @@
+[
+  {
+    "tool": "qualification_bigdata_qualification_certificate_profile",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "小米科技有限责任公司",
+      "keywordType": "name"
+    },
+    "invocation_id": "1793070086250614000",
+    "elapsed_seconds": 1.034,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "certFirstPublishTime",
+      "certLastPublishTime",
+      "certNumberThisYear",
+      "certTypeList",
+      "certificateCount"
+    ],
+    "row_count": null,
+    "reported_total": null,
+    "numeric_evidence": [
+      {
+        "path": "certNumberThisYear",
+        "value": 17
+      },
+      {
+        "path": "certificateCount",
+        "value": 278
+      }
+    ],
+    "response_sha256": "37a67f1c1722916bf18d834a180767cc519ae14d95eb9606f01bcf7da74c3b83"
+  },
+  {
+    "tool": "qualification_bigdata_honor_qualifications",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "小米科技有限责任公司",
+      "keywordType": "name"
+    },
+    "invocation_id": "1793070086250614000",
+    "elapsed_seconds": 0.74,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "resultList",
+      "total"
+    ],
+    "row_count": 2,
+    "reported_total": 2,
+    "numeric_evidence": [
+      {
+        "path": "total",
+        "value": 2
+      }
+    ],
+    "response_sha256": "bc9d9a0856e17165cd2dce7260014030ed3bb0f9c53d3db313352d32d3661840"
+  },
+  {
+    "tool": "qualification_bigdata_enterprise_qualifications",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "小米科技有限责任公司",
+      "keywordType": "name",
+      "pageIndex": 1,
+      "pageSize": 5
+    },
+    "invocation_id": "1793070086250614000",
+    "elapsed_seconds": 0.569,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "resultList",
+      "total"
+    ],
+    "row_count": 2,
+    "reported_total": 2,
+    "numeric_evidence": [
+      {
+        "path": "resultList[0].publishYear",
+        "value": 2022
+      },
+      {
+        "path": "resultList[1].publishYear",
+        "value": 2019
+      },
+      {
+        "path": "total",
+        "value": 2
+      }
+    ],
+    "response_sha256": "b1d6f5c9b580b0b2f8e8b3931b7d1f99e4eaa587be920eff08dd62517c374f0f"
+  },
+  {
+    "tool": "qualification_bigdata_administrative_licenses",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "小米科技有限责任公司",
+      "keywordType": "name",
+      "pageIndex": 1,
+      "pageSize": 5
+    },
+    "invocation_id": "1793070086250614000",
+    "elapsed_seconds": 0.59,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "resultList",
+      "total"
+    ],
+    "row_count": 5,
+    "reported_total": 84,
+    "numeric_evidence": [
+      {
+        "path": "total",
+        "value": 84
+      }
+    ],
+    "response_sha256": "f1fcb2d377b02c4c69870d3f09242cc2cf28577416cbc5fd710d9ccdfc121755"
+  },
+  {
+    "tool": "qualification_bigdata_hitech_enterprise_cert",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "小米科技有限责任公司",
+      "keywordType": "name",
+      "pageIndex": 1,
+      "pageSize": 5
+    },
+    "invocation_id": "1793070086250614000",
+    "elapsed_seconds": 0.496,
+    "status": "empty",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "text"
+    ],
+    "row_count": null,
+    "reported_total": null,
+    "numeric_evidence": [],
+    "response_sha256": "b2da0c4c26e517e5a1eae0af2a20ca47c52ef51906cf1c3dfa2fe10a67cc714c"
+  }
+]

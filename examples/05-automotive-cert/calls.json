@@ -1,0 +1,151 @@
+[
+  {
+    "tool": "qualification_bigdata_qualification_certificate_profile",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "比亚迪股份有限公司",
+      "keywordType": "name"
+    },
+    "invocation_id": "1793070086029449000",
+    "elapsed_seconds": 0.614,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "certFirstPublishTime",
+      "certLastPublishTime",
+      "certNumberThisYear",
+      "certTypeList",
+      "certificateCount"
+    ],
+    "row_count": null,
+    "reported_total": null,
+    "numeric_evidence": [
+      {
+        "path": "certNumberThisYear",
+        "value": 9
+      },
+      {
+        "path": "certificateCount",
+        "value": 182
+      }
+    ],
+    "response_sha256": "820a7429bf1f4ddfd5d777f6955a35f319a6784ac19d07a2a78cb010707e2419"
+  },
+  {
+    "tool": "qualification_bigdata_honor_qualifications",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "比亚迪股份有限公司",
+      "keywordType": "name"
+    },
+    "invocation_id": "1793070086029449000",
+    "elapsed_seconds": 0.886,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "resultList",
+      "total"
+    ],
+    "row_count": 4,
+    "reported_total": 4,
+    "numeric_evidence": [
+      {
+        "path": "total",
+        "value": 4
+      }
+    ],
+    "response_sha256": "78425eae619b4f5976e219718a5f2f867f08e8378ed279010dce26c68400a621"
+  },
+  {
+    "tool": "qualification_bigdata_enterprise_qualifications",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "比亚迪股份有限公司",
+      "keywordType": "name",
+      "pageIndex": 1,
+      "pageSize": 10
+    },
+    "invocation_id": "1793070086029449000",
+    "elapsed_seconds": 1.05,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "resultList",
+      "total"
+    ],
+    "row_count": 3,
+    "reported_total": 3,
+    "numeric_evidence": [
+      {
+        "path": "resultList[0].publishYear",
+        "value": 2022
+      },
+      {
+        "path": "resultList[1].publishYear",
+        "value": 2022
+      },
+      {
+        "path": "resultList[2].publishYear",
+        "value": 2022
+      },
+      {
+        "path": "total",
+        "value": 3
+      }
+    ],
+    "response_sha256": "b4fd1763690dde14531fc8b20c266c895eb6d23cf0e462eb39524873041af067"
+  },
+  {
+    "tool": "qualification_bigdata_administrative_licenses",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "比亚迪股份有限公司",
+      "keywordType": "name",
+      "pageIndex": 1,
+      "pageSize": 10
+    },
+    "invocation_id": "1793070086029449000",
+    "elapsed_seconds": 0.589,
+    "status": "data",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "resultList",
+      "total"
+    ],
+    "row_count": 10,
+    "reported_total": 247,
+    "numeric_evidence": [
+      {
+        "path": "total",
+        "value": 247
+      }
+    ],
+    "response_sha256": "3f74207b329f12abd86ab945109f00624e501f9a63ecaaa9fcdaef640fc05908"
+  },
+  {
+    "tool": "qualification_bigdata_hitech_enterprise_cert",
+    "domain": null,
+    "arguments": {
+      "matchKeyword": "比亚迪股份有限公司",
+      "keywordType": "name",
+      "pageIndex": 1,
+      "pageSize": 10
+    },
+    "invocation_id": "1793070086029449000",
+    "elapsed_seconds": 0.501,
+    "status": "empty",
+    "error_category": null,
+    "result_type": "dict",
+    "top_level_fields": [
+      "text"
+    ],
+    "row_count": null,
+    "reported_total": null,
+    "numeric_evidence": [],
+    "response_sha256": "b2da0c4c26e517e5a1eae0af2a20ca47c52ef51906cf1c3dfa2fe10a67cc714c"
+  }
+]

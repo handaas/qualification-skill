@@ -1,0 +1,113 @@
+{
+  "run_id": "live-replaced-20261027",
+  "cases": [
+    {
+      "skill": "qualification-skill",
+      "id": "01-supplier-cert",
+      "status": "passed",
+      "positive_business_pass": true,
+      "files_sha256": {
+        "report.json": "2583e8edd37e1acaf39f1c8bf506d3a11926a71e84ec868282ed9768070963f4",
+        "report.html": "22fb0eee8d811f46ea65d165759b187c6c37a478fed679d8f551151bf5b3369c",
+        "report.md": "7ed584e32c3f4cb00c327b502acb563eeebdfede4a91044d07d544ee1934386b",
+        "calls.json": "ce3141be0ef48e4db25b71143d4fc13033e6f41b2c0aff98d4ec65b0f6e3a94b",
+        "result.json": "3a26c71173633c0f13e479d2b24e5b9318ad1f44131bb12cf0794df354770ea7",
+        "audit.json": "721db3197f583922ff2ad9372bd58b96453514a568e816fd098173a6bd02ed9a",
+        "acceptance.json": "288a9b2fb1fa72a44738a7db04d46e4275df95708b18fae0f0f4784d62f877d4",
+        "business-review.json": "c03fda49da6a847972a0b2fac353068f9fde26fdb7bb6c034bb058ca139d524c",
+        "browser-check.json": "4b3dd7b3c5c9e5e72f92ef278d942eb5680c70f6ff7a74ced18b42d88cdd4c2f"
+      },
+      "audit_record": "../../test-records/live-replaced-20261027/01-supplier-cert.md"
+    },
+    {
+      "skill": "qualification-skill",
+      "id": "02-construction-cert",
+      "status": "passed",
+      "positive_business_pass": true,
+      "files_sha256": {
+        "report.json": "bc9f5dc2b2d88151e4acb8cbe7d6bf96f337619ced728f65e72eac8cce78be7a",
+        "report.html": "21c262aa85f2359bafd653590871c8c8d7120c705c5284f82ce40db2ae889918",
+        "report.md": "893b3c862102e994c8f6b766a19c61dea847d5240d4676299d8754b425733146",
+        "calls.json": "a8c6e3cf8011f9e118e520788642649eaa93fd6a4c2abffc8691e0cf209b16df",
+        "result.json": "e9b3a2371b6188034f3a7c5bd24122630992c0cd8215f94e56ea0fd6c24d7f6d",
+        "audit.json": "343e666d5ac9f7600d6d9f36baa2dd28bef7bcd930fb23b9d12a38a74558b555",
+        "acceptance.json": "5325638abce460eb99a09cd6e5adc47fb6e5ef2c3191f2c06d7d2c05033530b6",
+        "business-review.json": "1fccb651f48526bc9d097c2318769e8da7c8b41b2403a21c6fb904bda4aeacfd",
+        "browser-check.json": "608718ad17996aa899f7410dd0dfe635e947b29ecd9c0a328a19513110a2dc62"
+      },
+      "audit_record": "../../test-records/live-replaced-20261027/02-construction-cert.md"
+    },
+    {
+      "skill": "qualification-skill",
+      "id": "03-hitech-cert",
+      "status": "passed",
+      "positive_business_pass": true,
+      "files_sha256": {
+        "report.json": "3b403f1ce35daa748e933eb1d7c14cfaebdd5c9be801b61d13a1ba2097cb1125",
+        "report.html": "775f6b01c0cfe7ab7ab16cdbffde4dc88d400327565f421b981560ed6b177b83",
+        "report.md": "4dab4feca234a7f4c1db3fe453b698c8a33d2c10f9b0a24b2ae6f8e36b601ac2",
+        "calls.json": "c46afe354b13954b252cc146850cef0a1acc984d577534f28db801f29705c0b7",
+        "result.json": "c423e3d7b965fad1ba68b72d5e9d93109bb68dac89ec46816afa841af6af90ba",
+        "audit.json": "5ba290ecebfc7e7dd39a8d93783f2f053f358235d70dc2ae371fd2c1717c4134",
+        "acceptance.json": "f0d83eb958c381230eb9d6909a1fb664626a4a5209d005975dc341d9f920c069",
+        "business-review.json": "0963bdf7ad9cbe0b2666149acb7d8496ae9444aabb535ec0072a06f2ef994f98",
+        "browser-check.json": "7dc45e0af7546b4c6e4f610711b2075bccb38728ec55580bf3cd3541bed6a437"
+      },
+      "audit_record": "../../test-records/live-replaced-20261027/03-hitech-cert.md"
+    },
+    {
+      "skill": "qualification-skill",
+      "id": "04-consumer-license",
+      "status": "passed",
+      "positive_business_pass": true,
+      "files_sha256": {
+        "report.json": "4de7f37fc9c5b0546a9dcd09afb8e4991e2b3355ccc25f9613652f3c318c91d7",
+        "report.html": "cc02c5e103c0b1253dfdea1efdb5ec5c2f863fbedd3392d9d625e26d6c2f375d",
+        "report.md": "4af2e59878d60432d55f27f33f4a94be7bbcd8bac8381496cf35b76f237ab480",
+        "calls.json": "f2f60aef59d10701228b2ddb1e99c39408302e623bca51c194b2dc8eb7c10210",
+        "result.json": "8f4e2c2688d2ba650a239fc6ae22b85e91af60ce2b2eb6d044accfc34bf90660",
+        "audit.json": "f50c35ea5447be5f2098e217dd146953db5ade9033ba021c644af6d8a1ba9f33",
+        "acceptance.json": "6243c405c1f1ed5906a2de3b42e959246bad913186751bdacb8c83b63879e9a8",
+        "business-review.json": "a542d1a93698111b7a351ea73ff95637344105a024bc81d949782cd67c50975a",
+        "browser-check.json": "c47c8acf60b1b4f6395e3152b39f7f61db730650eef892da262fd26322903764"
+      },
+      "audit_record": "../../test-records/live-replaced-20261027/04-consumer-license.md"
+    },
+    {
+      "skill": "qualification-skill",
+      "id": "05-automotive-cert",
+      "status": "passed",
+      "positive_business_pass": true,
+      "files_sha256": {
+        "report.json": "870bcce6e99c2f17ae263da1b4c307e4da1951a8a79775ca2b819e65a19d3d83",
+        "report.html": "970aa2786c9cc566b3b3b11788da57b8c27f4f64c53ea1aba77ad23a242765be",
+        "report.md": "b4e75370e321abe7ca7d9c8d007f8f5ce07e157d39ae271d481b1b8d56986d2a",
+        "calls.json": "2431c913d50f60f19fd3d17b4f3589f081cf5c449d97cd396ce876383da84bc1",
+        "result.json": "9e716636f0910c098405ec647e07f34d6cf9b9b135533831da09858ae145b9ce",
+        "audit.json": "164e2f3cb51f1eed06a65bae010f7a1e4ce3870ca9836fedc236332c6197080d",
+        "acceptance.json": "ba4f55d246344bb380a6c67a0300809c8c1842ce1925d8fafe78064f94769cf4",
+        "business-review.json": "9e70bc8e68fbbc23dd8ed964a18cacffd55cfe4e1f252c60f23cc67a940566db",
+        "browser-check.json": "abee3f5b4056968b2dd08719b09493c6b2c6214fb8456b39c7bc011511d6367f"
+      },
+      "audit_record": "../../test-records/live-replaced-20261027/05-automotive-cert.md"
+    },
+    {
+      "skill": "qualification-skill",
+      "id": "07-compact-cert",
+      "status": "passed",
+      "positive_business_pass": true,
+      "files_sha256": {
+        "report.json": "009632d234850fa3fc85826415678867d0e61a3e0041b5a8932f15b031e33ccb",
+        "report.html": "ad9099e25791558a4fba1f4250208f5811116433b14ad217364224d94f164c5e",
+        "report.md": "bd42513abf43adcbc7ff14bc0a9736b20a83cad3408cc9471caf4d62eab4edaa",
+        "calls.json": "8a19f2833b39aefc0eebbdec1a7445964c9005e08778181fc9df4910546650ee",
+        "result.json": "ee56dee4d0436f6491149d015ea988331199a6358e27006ba266c9174cbd393d",
+        "audit.json": "9b73aa56bbdceb3d9801d5116d8b7e359afa6e913f4623ff38d9f1c3613941b9",
+        "acceptance.json": "bf2081691efee07c8cea39b7fc53ad98f3f7edf1178628c72ad5dd87cb71ab36",
+        "business-review.json": "59a29d03f3e8091c906e8dd14d79d2d91b85a766b5bcbc77342f98b50903294a",
+        "browser-check.json": "e4f899dd3ac7bbf951d60162cfd19cb2cd52fa19e585b849d16be486b732841c"
+      },
+      "audit_record": "../../test-records/live-replaced-20261027/07-compact-cert.md"
+    }
+  ]
+}

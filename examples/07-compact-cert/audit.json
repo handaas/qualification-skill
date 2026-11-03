@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "skill": "qualification-skill",
+  "case_id": "07-compact-cert",
+  "title": "资质快速抽样",
+  "invocation_id": "1793070086250614000",
+  "provenance": {
+    "integrator_id": "683e574805537ace146cc05e",
+    "runner_sha256": "05777c2f2b0791cb5157aef691206606dade8df7af3b17212285b7ae74632a66",
+    "credential_policy_sha256": "bcabf08a1ca92f28357c0e57a8bae9bfa910eb1d4b204d8195ee3b7a77106eed",
+    "scenario_sha256": "dcc76e4794fffb9b8c9295f2c6a862c20157b6d857245488ff7a8e5483e6c591",
+    "skill_source_hashes": {
+      "scripts/common.py": "b9cc5488b56bd9ca03d49ddf26e49f240a8b4f078d7f5f1942cefda0e5346698",
+      "scripts/compose_report.py": "71b6c3f70c936391d5b5e752dd2ef33b5e9035d8373fa6fa61d3eb36bf206500",
+      "scripts/mcp_client.py": "185f19aba4507e7f6669cdb7bf20b59f5378e64bf27e6524390c57670411e03e",
+      "scripts/render_report.py": "1ef8b5cecc7811147bbe70fb69f25815757f55a35774badf037d034f951b5853",
+      "scripts/validate_config.py": "ed27ff6a1d72de273df885ae78da06d7b27de583d8088dae263d38780f3eb59a"
+    },
+    "upstream_source_hashes": {
+      "qualification-mcp-server": "4584657674aeabdbfebba2037ece26a5cb0f48063de131311bdd62e6267d54b7"
+    },
+    "upstream_dependency_hashes": {
+      "qualification-mcp-server/server/mcp_server.py": "4584657674aeabdbfebba2037ece26a5cb0f48063de131311bdd62e6267d54b7"
+    }
+  },
+  "source_changed_during_run": false,
+  "started_at": "2026-10-27T11:01:26+08:00",
+  "elapsed_seconds": 3.53,
+  "returncode": 0,
+  "exception_type": null,
+  "command": "python3 qualification-skill/scripts/compose_report.py --enterprise '小米科技有限责任公司' --page-size 5 --output qualification-skill/output/live-replaced-20261027/07-compact-cert/report.json --report-output qualification-skill/output/live-replaced-20261027/07-compact-cert/report.html",
+  "transport": "local MCP servers via loopback streamable-http",
+  "cache_used": false,
+  "call_count": 5,
+  "successful_data_calls": 4,
+  "empty_calls": 1,
+  "failed_calls": 0,
+  "checks": {
+    "issues": [],
+    "warnings": [],
+    "coverage_pct": 89,
+    "subject": {
+      "enterprise": "小米科技有限责任公司",
+      "matchKeyword": "小米科技有限责任公司",
+      "keywordType": "name",
+      "match_raw": "小米科技有限责任公司",
+      "resolved": true,
+      "resolve_reason": "视为企业全称",
+      "fuzzy_total": null,
+      "requires_confirmation": false,
+      "fuzzy_requested": false
+    },
+    "title": "小米科技有限责任公司 资质大数据报告",
+    "data_mode": null,
+    "metrics": [
+      {
+        "label": "证书总数",
+        "value": "278",
+        "hint": "企业资质证书总量"
+      },
+      {
+        "label": "近一年获证",
+        "value": "17",
+        "hint": "最近一年获证数量",
+        "delta": "占总量 6%"
+      },
+      {
+        "label": "荣誉资质",
+        "value": "2 条",
+        "hint": "荣誉资质条数"
+      },
+      {
+        "label": "企业资质",
+        "value": "2 条",
+        "hint": "企业资质条数"
+      },
+      {
+        "label": "行政许可",
+        "value": "84 条",
+        "hint": "行政许可条数"
+      },
+      {
+        "label": "资质类别聚类",
+        "value": "2 类",
+        "hint": "qualificationClasses 去重数"
+      },
+      {
+        "label": "高新技术领域",
+        "value": "1 个",
+        "hint": "highTechIndustryList 去重领域数"
+      },
+      {
+        "label": "资质类别数",
+        "value": "3",
+        "hint": "不同资质证书类别数"
+      },
+      {
+        "label": "获证年份跨度",
+        "value": "2",
+        "hint": "有获证记录的年度数"
+      },
+      {
+        "label": "近一年获证",
+        "value": "17",
+        "hint": "最近一年新获证书数量"
+      }
+    ],
+    "quality_report": {
+      "total_sections": 9,
+      "populated_sections": 8,
+      "empty_sections": 1,
+      "coverage_pct": 89
+    },
+    "unregistered_tools": [],
+    "checks": {
+      "json_html_markdown": true,
+      "explicit_live": true,
+      "tool_calls_recorded": 5,
+      "offline_scripts": true,
+      "independent_rerender": true,
+      "offline_browser": true
+    }
+  },
+  "status": "passed",
+  "source_hashes": {
+    "scripts/common.py": "b9cc5488b56bd9ca03d49ddf26e49f240a8b4f078d7f5f1942cefda0e5346698",
+    "scripts/compose_report.py": "71b6c3f70c936391d5b5e752dd2ef33b5e9035d8373fa6fa61d3eb36bf206500",
+    "scripts/mcp_client.py": "185f19aba4507e7f6669cdb7bf20b59f5378e64bf27e6524390c57670411e03e",
+    "scripts/render_report.py": "1ef8b5cecc7811147bbe70fb69f25815757f55a35774badf037d034f951b5853",
+    "scripts/validate_config.py": "ed27ff6a1d72de273df885ae78da06d7b27de583d8088dae263d38780f3eb59a"
+  },
+  "technical_status": "passed",
+  "audited_at": "2026-10-27T11:13:03+08:00",
+  "evidence_binding": {
+    "report.json": "009632d234850fa3fc85826415678867d0e61a3e0041b5a8932f15b031e33ccb",
+    "report.html": "ad9099e25791558a4fba1f4250208f5811116433b14ad217364224d94f164c5e",
+    "report.md": "bd42513abf43adcbc7ff14bc0a9736b20a83cad3408cc9471caf4d62eab4edaa",
+    "calls.json": "8a19f2833b39aefc0eebbdec1a7445964c9005e08778181fc9df4910546650ee",
+    "result.json": "ee56dee4d0436f6491149d015ea988331199a6358e27006ba266c9174cbd393d",
+    "source_manifest_sha256": "014e0c39ccd221d4b037bfafc75dc705b73521da54c003be18fa8ca62d4dab92"
+  }
+}
