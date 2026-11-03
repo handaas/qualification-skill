@@ -17,7 +17,7 @@
         "business-review.json": "c03fda49da6a847972a0b2fac353068f9fde26fdb7bb6c034bb058ca139d524c",
         "browser-check.json": "4b3dd7b3c5c9e5e72f92ef278d942eb5680c70f6ff7a74ced18b42d88cdd4c2f"
       },
-      "audit_record": "../../test-records/live-replaced-20261027/01-supplier-cert.md"
+      "audit_record": "../test-records/live-replaced-20261027/01-supplier-cert.md"
     },
     {
       "skill": "qualification-skill",
@@ -35,7 +35,7 @@
         "business-review.json": "1fccb651f48526bc9d097c2318769e8da7c8b41b2403a21c6fb904bda4aeacfd",
         "browser-check.json": "608718ad17996aa899f7410dd0dfe635e947b29ecd9c0a328a19513110a2dc62"
       },
-      "audit_record": "../../test-records/live-replaced-20261027/02-construction-cert.md"
+      "audit_record": "../test-records/live-replaced-20261027/02-construction-cert.md"
     },
     {
       "skill": "qualification-skill",
@@ -53,7 +53,7 @@
         "business-review.json": "0963bdf7ad9cbe0b2666149acb7d8496ae9444aabb535ec0072a06f2ef994f98",
         "browser-check.json": "7dc45e0af7546b4c6e4f610711b2075bccb38728ec55580bf3cd3541bed6a437"
       },
-      "audit_record": "../../test-records/live-replaced-20261027/03-hitech-cert.md"
+      "audit_record": "../test-records/live-replaced-20261027/03-hitech-cert.md"
     },
     {
       "skill": "qualification-skill",
@@ -71,7 +71,7 @@
         "business-review.json": "a542d1a93698111b7a351ea73ff95637344105a024bc81d949782cd67c50975a",
         "browser-check.json": "c47c8acf60b1b4f6395e3152b39f7f61db730650eef892da262fd26322903764"
       },
-      "audit_record": "../../test-records/live-replaced-20261027/04-consumer-license.md"
+      "audit_record": "../test-records/live-replaced-20261027/04-consumer-license.md"
     },
     {
       "skill": "qualification-skill",
@@ -89,7 +89,7 @@
         "business-review.json": "9e70bc8e68fbbc23dd8ed964a18cacffd55cfe4e1f252c60f23cc67a940566db",
         "browser-check.json": "abee3f5b4056968b2dd08719b09493c6b2c6214fb8456b39c7bc011511d6367f"
       },
-      "audit_record": "../../test-records/live-replaced-20261027/05-automotive-cert.md"
+      "audit_record": "../test-records/live-replaced-20261027/05-automotive-cert.md"
     },
     {
       "skill": "qualification-skill",
@@ -107,7 +107,7 @@
         "business-review.json": "59a29d03f3e8091c906e8dd14d79d2d91b85a766b5bcbc77342f98b50903294a",
         "browser-check.json": "e4f899dd3ac7bbf951d60162cfd19cb2cd52fa19e585b849d16be486b732841c"
       },
-      "audit_record": "../../test-records/live-replaced-20261027/07-compact-cert.md"
+      "audit_record": "../test-records/live-replaced-20261027/07-compact-cert.md"
     }
   ]
 }
