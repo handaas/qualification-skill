@@ -37,6 +37,7 @@
     .biz-metric .m-tag.t-down { color:#dc2626; }
     .biz-metric .m-tag.t-neutral { color:#6366f1; }
     .biz-metric .m-value { color:#0b3768; font-size:26px; line-height:1.1; font-weight:900; letter-spacing:-.02em; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; margin-top:auto; }
+    .biz-metric .m-hint { color:#64748b; font-size:11px; line-height:1.5; margin-top:6px; text-align:left; }
     .biz-metric .m-value .m-tag.t-up { color:#16a34a; }
     .biz-metric .m-value .m-tag.t-down { color:#dc2626; }
     .biz-metric .m-value .m-tag.t-neutral { color:#6366f1; }
@@ -165,7 +166,57 @@
     .glossary-term { display:flex; align-items:flex-start; padding:12px 14px; background:#f1f6fb; color:#0b5ca8; font-size:13px; font-weight:800; border-right:3px solid #0b5ca8; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; }
     .glossary-def { padding:12px 16px; color:#334155; font-size:13px; line-height:1.7; }
   </style>
-  <script>
+  <style>
+.chart-frame{position:relative;width:100%;height:300px;}
+.chart-box-gauge .chart-frame{height:240px;}
+.chart-static{position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;}
+.chart-static svg{display:block;width:100%;height:100%;}
+.chart-frame .chart-canvas{position:absolute;top:0;left:0;width:100%;height:100% !important;visibility:hidden;z-index:1;}
+.chart-frame[data-chart-state="ready"] .chart-canvas{visibility:visible;}
+.chart-frame[data-chart-state="ready"] .chart-static{visibility:hidden;}
+.chart-frame .chart-status{position:absolute;left:0;right:0;bottom:0;margin:0;padding:2px 8px;font-size:11px;color:#64748b;text-align:center;background:rgba(255,255,255,.88);z-index:2;}
+.chart-frame .chart-status:empty{display:none;}
+@media print{
+  .chart-frame{height:auto;overflow:visible;}
+  .chart-frame .chart-canvas{display:none !important;visibility:hidden;}
+  .chart-frame .chart-static{position:static;display:block !important;visibility:visible !important;}
+  .chart-frame .chart-status{display:none;}
+  .chart-static svg{height:auto;}
+}
+</style>
+<script>function handaasChartOption(spec){
+  if(!spec || ['line','bar','pie','gauge','radar'].indexOf(spec.type)<0){return null;}
+  var PALETTE=['#0b5ca8','#0284c7','#0b3768','#d97706','#059669','#dc2626','#7c3aed','#db2777','#0891b2','#65a30d'];
+  var FONTS="-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif";
+  var opt={animation:false,color:PALETTE,tooltip:{trigger: spec.type==='pie'?'item':'axis'},textStyle:{fontFamily:FONTS,fontSize:12,color:'#334155'},grid:{left:48,right:24,top:30,bottom:40},legend:{top:0,textStyle:{fontSize:11}}};
+  if(spec.type==='line'){
+    opt.xAxis={type:'category',data:spec.x,axisLabel:{fontSize:11,interval:0,rotate: spec.x && spec.x.length>6?35:0}};
+    opt.yAxis={type:'value'};
+    opt.series=spec.series.map(function(s){return{name:s.name,type:'line',smooth:true,areaStyle: spec.area?{opacity:0.18}:undefined,stack: spec.stack?s.name:undefined,data:s.data,label:{show:true,position:'top',fontSize:11}};});
+    if(spec.stack){opt.tooltip={trigger:'axis'};}
+  }else if(spec.type==='bar'){
+    var horiz=spec.orient==='h';
+    var cats=spec.names, vals=spec.values;
+    if(horiz){opt.yAxis={type:'category',data:cats,axisLabel:{fontSize:11}};opt.xAxis={type:'value'};opt.grid={left:120,right:30,top:20,bottom:30};}
+    else{opt.xAxis={type:'category',data:cats,axisLabel:{fontSize:11,interval:0,rotate: cats&&cats.length>6?35:0}};opt.yAxis={type:'value'};}
+    opt.series=[{type:'bar',data:vals,itemStyle:{color:PALETTE[0]},label:{show:true,position: horiz?'right':'top',fontSize:11},barMaxWidth:42}];
+    opt.tooltip={trigger:'axis',axisPointer:{type:'shadow'}};
+  }else if(spec.type==='pie'){
+    opt.series=[{type:'pie',radius: spec.donut?['42%','68%']:'68%',center:['50%','55%'],data:spec.data,itemStyle:{borderColor:'#fff',borderWidth:2},label:{fontSize:11,formatter:'{b}: {c} ({d}%)'}}];
+    opt.legend={bottom:0,textStyle:{fontSize:11}};
+    opt.tooltip={trigger:'item',formatter:'{b}: {c} ({d}%)'};
+  }else if(spec.type==='gauge'){
+    var v=spec.value, mx=spec.max||100;
+    var col=v/mx>0.66?'#dc2626':(v/mx>0.33?'#d97706':'#059669');
+    opt.series=[{type:'gauge',min:0,max:mx,progress:{show:true,width:14,itemStyle:{color:col}},axisLine:{lineStyle:{width:14}},axisTick:{show:false},splitLine:{length:8,lineStyle:{color:'#fff'}},pointer:{width:5},detail:{valueAnimation:false,formatter:'{value}',fontSize:28,color:col,offsetCenter:[0,'30%']},data:[{value:v,name:spec.level||''}],title:{fontSize:13,color:'#475569',offsetCenter:[0,'62%']}}];
+  }else if(spec.type==='radar'){
+    opt.radar={indicator:spec.indicators,radius:'62%',axisName:{color:'#475569',fontSize:11},splitArea:{areaStyle:{color:['#f8fbff','#eef4fb']}}};
+    opt.series=[{type:'radar',areaStyle:{opacity:0.18},data:spec.series}];
+  }
+  return opt;
+}
+</script>
+<script>
 /*
 * Licensed to the Apache Software Foundation (ASF) under one
 * or more contributor license agreements.  See the NOTICE file
@@ -218,8 +269,10 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
   var status=window.__handaas_chart_status={state:'waiting',total:0,ready:0,failed:0};
   var timer=null, retries=0, MAX_RETRIES=100;
   var layoutRetries=0, MAX_LAYOUT_RETRIES=50;
-  var PALETTE=['#0b5ca8','#0284c7','#0b3768','#d97706','#059669','#dc2626','#7c3aed','#db2777','#0891b2','#65a30d'];
-  var FONTS='-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif';
+  var MSG_LOADING='图表库正在加载，数据明细仍可查看。';
+  var MSG_MISSING='图表交互不可用，已保留静态图表，数据明细仍可查看。';
+  var MSG_LAYOUT='图表等待布局完成后渲染，数据明细仍可查看。';
+  var MSG_FAILED='图表交互初始化失败，已保留静态图表，数据明细仍可查看。';
   function summarize(nodes){
     status.total=nodes.length;status.ready=0;status.failed=0;
     nodes.forEach(function(el){
@@ -229,18 +282,40 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
     status.state=status.ready===status.total?'ready':
       (status.ready+status.failed===status.total?(status.ready?'degraded':'error'):'waiting');
   }
+  function frameOf(el){
+    var p=el.parentElement;
+    if(p&&(' '+p.className+' ').indexOf(' chart-frame ')>-1){return p;}
+    return null;
+  }
+  function setStatus(el,msg){
+    var f=frameOf(el);
+    if(f){
+      var p=f.querySelector('.chart-status');
+      if(p){p.textContent=msg;}
+    }else{
+      el.textContent=msg;
+    }
+  }
   function raf(fn){if(window.requestAnimationFrame){window.requestAnimationFrame(fn);}else{fn();}}
+  function hasGeometry(chart,el){
+    if(!chart || chart.getWidth()<2 || chart.getHeight()<2){return false;}
+    var svg=el.querySelector('svg');
+    if(!svg){return false;}
+    return !!svg.querySelector('path,rect,circle,line,text,polygon,polyline');
+  }
   function boot(){
     if(document.readyState==='loading'){return;}
     var nodes=document.querySelectorAll('.chart-canvas');
     if(!nodes.length){summarize(nodes);return;}
-    if(!window.echarts || typeof window.echarts.init!=='function'){
+    if(!window.echarts || typeof window.echarts.init!=='function' || typeof window.handaasChartOption!=='function'){
       var exhausted=retries>=MAX_RETRIES;
       nodes.forEach(function(el){
         if(el.__handaas_chart_ready){return;}
         el.__handaas_dependency_error=true;
         el.setAttribute('data-chart-state',exhausted?'error':'waiting');
-        el.textContent=exhausted?'图表库加载失败或不可用，请查看数据明细或重新生成离线报告。':'图表库正在加载，数据明细仍可查看。';
+        setStatus(el,exhausted?MSG_MISSING:MSG_LOADING);
+        var f=frameOf(el);
+        if(f){f.setAttribute('data-chart-state',exhausted?'error':'static');}
       });
       summarize(nodes);
       if(!exhausted && timer===null){
@@ -253,6 +328,7 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
     var pendingLayout=0;
     nodes.forEach(function(el){
       if(el.__handaas_chart_ready){return;}
+      var f=frameOf(el);
       if(el.getAttribute('data-chart-state')==='error' && !el.__handaas_dependency_error){return;}
       if(window.ResizeObserver && !el.__handaas_resize_observer){
         el.__handaas_resize_observer=new ResizeObserver(function(){
@@ -264,7 +340,8 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
       }
       if((el.getClientRects && el.getClientRects().length===0) || el.clientWidth<2 || el.clientHeight<2){
         el.setAttribute('data-chart-state','waiting');
-        el.textContent='图表等待布局完成后渲染，数据明细仍可查看。';
+        setStatus(el,MSG_LAYOUT);
+        if(f){f.setAttribute('data-chart-state','static');}
         pendingLayout++;
         return;
       }
@@ -274,46 +351,36 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
         if(!raw){throw new Error('Missing chart configuration');}
         // getAttribute already decodes HTML entities; a second decode corrupts labels.
         var spec=JSON.parse(raw);
-        if(['line','bar','pie','gauge','radar'].indexOf(spec.type)<0){throw new Error('Unsupported chart type');}
+        var opt=window.handaasChartOption(spec);
+        if(!opt){throw new Error('Unsupported chart type');}
         el.textContent='';
         chart=window.echarts.init(el,null,{renderer:'svg'});
-      var opt={color:PALETTE,tooltip:{trigger: spec.type==='pie'?'item':'axis'},textStyle:{fontFamily:FONTS,fontSize:12,color:'#334155'},grid:{left:48,right:24,top:30,bottom:40},legend:{top:0,textStyle:{fontSize:11}}};
-      if(spec.type==='line'){
-        opt.xAxis={type:'category',data:spec.x,axisLabel:{fontSize:11,interval:0,rotate: spec.x && spec.x.length>6?35:0}};
-        opt.yAxis={type:'value'};
-        opt.series=spec.series.map(function(s){return{name:s.name,type:'line',smooth:true,areaStyle: spec.area?{opacity:0.18}:undefined,stack: spec.stack?s.name:undefined,data:s.data,label:{show:true,position:'top',fontSize:11}};});
-        if(spec.stack){opt.tooltip={trigger:'axis'};}
-      }else if(spec.type==='bar'){
-        var horiz=spec.orient==='h';
-        var cats=spec.names, vals=spec.values;
-        if(horiz){opt.yAxis={type:'category',data:cats,axisLabel:{fontSize:11}};opt.xAxis={type:'value'};opt.grid={left:120,right:30,top:20,bottom:30};}
-        else{opt.xAxis={type:'category',data:cats,axisLabel:{fontSize:11,interval:0,rotate: cats&&cats.length>6?35:0}};opt.yAxis={type:'value'};}
-        opt.series=[{type:'bar',data:vals,itemStyle:{color:PALETTE[0]},label:{show:true,position: horiz?'right':'top',fontSize:11},barMaxWidth:42}];
-        opt.tooltip={trigger:'axis',axisPointer:{type:'shadow'}};
-      }else if(spec.type==='pie'){
-        opt.series=[{type:'pie',radius: spec.donut?['42%','68%']:'68%',center:['50%','55%'],data:spec.data,itemStyle:{borderColor:'#fff',borderWidth:2},label:{fontSize:11,formatter:'{b}: {c} ({d}%)'}}];
-        opt.legend={bottom:0,textStyle:{fontSize:11}};
-        opt.tooltip={trigger:'item',formatter:'{b}: {c} ({d}%)'};
-      }else if(spec.type==='gauge'){
-        var v=spec.value, mx=spec.max||100;
-        var col=v/mx>0.66?'#dc2626':(v/mx>0.33?'#d97706':'#059669');
-        opt.series=[{type:'gauge',min:0,max:mx,progress:{show:true,width:14,itemStyle:{color:col}},axisLine:{lineStyle:{width:14}},axisTick:{show:false},splitLine:{length:8,lineStyle:{color:'#fff'}},pointer:{width:5},detail:{valueAnimation:true,formatter:'{value}',fontSize:28,color:col,offsetCenter:[0,'30%']},data:[{value:v,name:spec.level||''}],title:{fontSize:13,color:'#475569',offsetCenter:[0,'62%']}}];
-      }else if(spec.type==='radar'){
-        opt.radar={indicator:spec.indicators,radius:'62%',axisName:{color:'#475569',fontSize:11},splitArea:{areaStyle:{color:['#f8fbff','#eef4fb']}}};
-        opt.series=[{type:'radar',areaStyle:{opacity:0.18},data:spec.series}];
-      }
         chart.setOption(opt);
+        // Real synchronous flush: setOption already flushes internally, but
+        // drive the zrender painter once more before the geometry gate. Any
+        // throw here falls into catch and keeps the static SVG.
+        var zr=chart.getZr();
+        if(zr && typeof zr.flush==='function'){zr.flush();}
+        // Never reveal the interactive layer (and never hide the static SVG)
+        // before real SVG geometry exists on the canvas overlay.
+        if(!hasGeometry(chart,el)){throw new Error('Empty chart geometry');}
         el.__handaas_chart=chart;
         el.__handaas_chart_ready=true;
         el.__handaas_dependency_error=false;
         el.setAttribute('data-chart-state','ready');
         window.__echarts_instances.push(chart);
+        if(f){
+          f.setAttribute('data-chart-state','ready');
+          var p=f.querySelector('.chart-status');
+          if(p){p.textContent='';}
+        }
         raf(function(){try{chart.resize();}catch(ignored){}});
       }catch(e){
         if(chart && typeof chart.dispose==='function'){try{chart.dispose();}catch(ignored){}}
         el.__handaas_dependency_error=false;
         el.setAttribute('data-chart-state','error');
-        el.textContent='图表绘制失败，请查看数据明细。';
+        setStatus(el,MSG_FAILED);
+        if(f){f.setAttribute('data-chart-state','error');}
       }
     });
     summarize(nodes);
@@ -363,7 +430,7 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
         <h1>华为技术有限公司 资质大数据报告</h1>
         <p class="report-lead">本报告以“华为技术有限公司”为分析对象，基于资质公开数据，系统呈现企业资质证书概况、荣誉资质、企业资质、行政许可与高新技术企业认证明细。关键指标包括：证书总数 23312、近一年获证 1943、荣誉资质 29 条、企业资质 37 条、行政许可 1075 条。报告同时给出资质资产规模、近期获证活跃度与高新技术资质的结构化解读，便于招投标、政策申报与商业合作决策参考</p>
         <div class="abstract-box">报告涵盖查询对象、数据总览、核心分析、代表性记录与结构洞察，所有数据均标注口径与来源。</div>
-        <div class="biz-metrics"><div class="biz-metric"><span class="m-name">证书总数</span><span class="m-tag"></span><span class="m-value">23312</span></div><div class="biz-metric"><span class="m-name">近一年获证</span><span class="m-tag t-neutral">占总量 8%</span><span class="m-value">1943</span></div><div class="biz-metric"><span class="m-name">荣誉资质</span><span class="m-tag"></span><span class="m-value">29 条</span></div><div class="biz-metric"><span class="m-name">企业资质</span><span class="m-tag"></span><span class="m-value">37 条</span></div><div class="biz-metric"><span class="m-name">行政许可</span><span class="m-tag"></span><span class="m-value">1075 条</span></div><div class="biz-metric"><span class="m-name">高新技术企业认证</span><span class="m-tag"></span><span class="m-value">5 条</span></div><div class="biz-metric"><span class="m-name">资质类别聚类</span><span class="m-tag"></span><span class="m-value">1 类</span></div><div class="biz-metric"><span class="m-name">高新技术领域</span><span class="m-tag"></span><span class="m-value">2 个</span></div><div class="biz-metric"><span class="m-name">资质类别数</span><span class="m-tag"></span><span class="m-value">4</span></div><div class="biz-metric"><span class="m-name">获证年份跨度</span><span class="m-tag"></span><span class="m-value">3</span></div><div class="biz-metric"><span class="m-name">近一年获证</span><span class="m-tag"></span><span class="m-value">1943</span></div><div class="biz-metric-empty"></div></div>
+        <div class="biz-metrics"><div class="biz-metric"><span class="m-name">证书总数</span><span class="m-tag"></span><span class="m-value">23312</span><span class="m-hint">企业资质证书总量</span></div><div class="biz-metric"><span class="m-name">近一年获证</span><span class="m-tag t-neutral">占总量 8%</span><span class="m-value">1943</span><span class="m-hint">最近一年获证数量</span></div><div class="biz-metric"><span class="m-name">荣誉资质</span><span class="m-tag"></span><span class="m-value">29 条</span><span class="m-hint">荣誉资质条数</span></div><div class="biz-metric"><span class="m-name">企业资质</span><span class="m-tag"></span><span class="m-value">37 条</span><span class="m-hint">企业资质条数</span></div><div class="biz-metric"><span class="m-name">行政许可</span><span class="m-tag"></span><span class="m-value">1075 条</span><span class="m-hint">行政许可条数</span></div><div class="biz-metric"><span class="m-name">高新技术企业认证</span><span class="m-tag"></span><span class="m-value">5 条</span><span class="m-hint">高新技术企业认证条数</span></div><div class="biz-metric"><span class="m-name">资质类别聚类</span><span class="m-tag"></span><span class="m-value">1 类</span><span class="m-hint">qualificationClasses 去重数</span></div><div class="biz-metric"><span class="m-name">高新技术领域</span><span class="m-tag"></span><span class="m-value">2 个</span><span class="m-hint">highTechIndustryList 去重领域数</span></div><div class="biz-metric"><span class="m-name">资质类别数</span><span class="m-tag"></span><span class="m-value">4</span><span class="m-hint">不同资质证书类别数</span></div><div class="biz-metric"><span class="m-name">获证年份跨度</span><span class="m-tag"></span><span class="m-value">3</span><span class="m-hint">有获证记录的年度数</span></div><div class="biz-metric"><span class="m-name">近一年获证</span><span class="m-tag"></span><span class="m-value">1943</span><span class="m-hint">最近一年新获证书数量</span></div><div class="biz-metric-empty"></div></div>
         <ul class="exec-list"><li>该值仅描述上游返回的证书总量，不单独证明业务能力、投标资格或合作适配性。</li><li>“近一年”沿用上游字段口径，当前响应未提供起止日期；该占比仅作数量观察，不推断扩张阶段或稳定程度。</li><li>该值仅描述返回的认证记录数；研发情况、优惠适用和认证有效性需核验具体证书及主管部门记录。</li><li>CR2 仅描述本次返回类别的数量集中程度，不能单独判断业务聚焦、专业化或多元化程度。</li><li>该比例仅按返回记录中的状态文本计算；优惠适用、续期要求和实际效力需以主管部门记录为准。</li></ul>
         <div class="cover-findings"><h3 class="cover-findings-title">核心发现</h3><div class="cover-findings-grid"><div class="finding-card"><p class="f-label">资质资产规模</p><p class="f-text">企业资质证书总数 23312。</p></div><div class="finding-card"><p class="f-label">近期获证观察</p><p class="f-text">近一年获证 1943 项，占证书总量约 8%。</p></div><div class="finding-card"><p class="f-label">高新技术资质</p><p class="f-text">高新技术企业认证记录 5 条。</p></div><div class="finding-card"><p class="f-label">资质类别集中度</p><p class="f-text">“行政许可”类资质占比约 94%，前 2 类合计 97%（CR2）。</p></div></div></div>
         <div class="cover-dimensions"><span class="dim-label">分析维度</span><div class="dim-tags"><span class="dim-tag">资质证书概况</span><span class="dim-tag">资质类别分布</span><span class="dim-tag">资质类别聚类</span><span class="dim-tag">高新技术领域覆盖</span><span class="dim-tag">获证年度趋势</span><span class="dim-tag">荣誉资质</span><span class="dim-tag">企业资质</span><span class="dim-tag">行政许可</span><span class="dim-tag">高新技术企业认证</span></div></div>
@@ -374,12 +441,204 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
   <main class="research-doc">
     <section class="report-page biz-section"><div class="report-topbar"><div class="report-stripe"></div><div class="report-banner">资质大数据报告</div></div><div class="biz-section-head"><div><h2>报告摘要</h2><p class="biz-section-note">概述分析对象、数据覆盖范围与核心发现。</p></div><span class="biz-tag">Summary</span></div><p class="biz-summary">本报告以“华为技术有限公司”为分析对象，基于资质公开数据，系统呈现企业资质证书概况、荣誉资质、企业资质、行政许可与高新技术企业认证明细。关键指标包括：证书总数 23312、近一年获证 1943、荣誉资质 29 条、企业资质 37 条、行政许可 1075 条。报告同时给出资质资产规模、近期获证活跃度与高新技术资质的结构化解读，便于招投标、政策申报与商业合作决策参考</p></section>
     <section class="report-page biz-section"><div class="report-topbar"><div class="report-stripe"></div><div class="report-banner">资质大数据报告</div></div><div class="biz-section-head"><div><h2>查询对象与口径</h2><p class="biz-section-note">说明匹配对象、匹配方式与数据范围。</p></div><span class="biz-tag">Caliber</span></div><div class="info-list"><div class="info-row"><span class="info-label">匹配对象</span><span class="info-value">华为技术有限公司</span></div><div class="info-row"><span class="info-label">匹配方式</span><span class="info-value">资质大数据按企业主体匹配（keywordType=name）</span></div><div class="info-row"><span class="info-label">数据范围</span><span class="info-value">资质证书概况、荣誉资质、企业资质、行政许可、高新技术企业认证、资质类别聚类、高新技术领域覆盖、获证年度趋势</span></div><div class="info-row"><span class="info-label">局限说明</span><span class="info-value">数据来自资质公开数据库；少量字段可能存在更新延迟。</span></div></div></section>
-    <section class="report-page biz-section"><div class="report-topbar"><div class="report-stripe"></div><div class="report-banner">资质大数据报告</div></div><div class="biz-section-head"><div><h2>数据总览</h2><p class="biz-section-note">关键指标一览。</p></div><span class="biz-tag">Metrics</span></div><div class="biz-metrics"><div class="biz-metric"><span class="m-name">证书总数</span><span class="m-tag"></span><span class="m-value">23312</span></div><div class="biz-metric"><span class="m-name">近一年获证</span><span class="m-tag t-neutral">占总量 8%</span><span class="m-value">1943</span></div><div class="biz-metric"><span class="m-name">荣誉资质</span><span class="m-tag"></span><span class="m-value">29 条</span></div><div class="biz-metric"><span class="m-name">企业资质</span><span class="m-tag"></span><span class="m-value">37 条</span></div><div class="biz-metric"><span class="m-name">行政许可</span><span class="m-tag"></span><span class="m-value">1075 条</span></div><div class="biz-metric"><span class="m-name">高新技术企业认证</span><span class="m-tag"></span><span class="m-value">5 条</span></div><div class="biz-metric"><span class="m-name">资质类别聚类</span><span class="m-tag"></span><span class="m-value">1 类</span></div><div class="biz-metric"><span class="m-name">高新技术领域</span><span class="m-tag"></span><span class="m-value">2 个</span></div><div class="biz-metric"><span class="m-name">资质类别数</span><span class="m-tag"></span><span class="m-value">4</span></div><div class="biz-metric"><span class="m-name">获证年份跨度</span><span class="m-tag"></span><span class="m-value">3</span></div><div class="biz-metric"><span class="m-name">近一年获证</span><span class="m-tag"></span><span class="m-value">1943</span></div><div class="biz-metric-empty"></div></div></section>
+    <section class="report-page biz-section"><div class="report-topbar"><div class="report-stripe"></div><div class="report-banner">资质大数据报告</div></div><div class="biz-section-head"><div><h2>数据总览</h2><p class="biz-section-note">关键指标一览。</p></div><span class="biz-tag">Metrics</span></div><div class="biz-metrics"><div class="biz-metric"><span class="m-name">证书总数</span><span class="m-tag"></span><span class="m-value">23312</span><span class="m-hint">企业资质证书总量</span></div><div class="biz-metric"><span class="m-name">近一年获证</span><span class="m-tag t-neutral">占总量 8%</span><span class="m-value">1943</span><span class="m-hint">最近一年获证数量</span></div><div class="biz-metric"><span class="m-name">荣誉资质</span><span class="m-tag"></span><span class="m-value">29 条</span><span class="m-hint">荣誉资质条数</span></div><div class="biz-metric"><span class="m-name">企业资质</span><span class="m-tag"></span><span class="m-value">37 条</span><span class="m-hint">企业资质条数</span></div><div class="biz-metric"><span class="m-name">行政许可</span><span class="m-tag"></span><span class="m-value">1075 条</span><span class="m-hint">行政许可条数</span></div><div class="biz-metric"><span class="m-name">高新技术企业认证</span><span class="m-tag"></span><span class="m-value">5 条</span><span class="m-hint">高新技术企业认证条数</span></div><div class="biz-metric"><span class="m-name">资质类别聚类</span><span class="m-tag"></span><span class="m-value">1 类</span><span class="m-hint">qualificationClasses 去重数</span></div><div class="biz-metric"><span class="m-name">高新技术领域</span><span class="m-tag"></span><span class="m-value">2 个</span><span class="m-hint">highTechIndustryList 去重领域数</span></div><div class="biz-metric"><span class="m-name">资质类别数</span><span class="m-tag"></span><span class="m-value">4</span><span class="m-hint">不同资质证书类别数</span></div><div class="biz-metric"><span class="m-name">获证年份跨度</span><span class="m-tag"></span><span class="m-value">3</span><span class="m-hint">有获证记录的年度数</span></div><div class="biz-metric"><span class="m-name">近一年获证</span><span class="m-tag"></span><span class="m-value">1943</span><span class="m-hint">最近一年新获证书数量</span></div><div class="biz-metric-empty"></div></div></section>
     <section class="report-page biz-section"><div class="report-topbar"><div class="report-stripe"></div><div class="report-banner">资质大数据报告</div></div><div class="biz-section-head"><div><h2>核心分析</h2><p class="biz-section-note">按维度展开目标核心数据与结构化明细。</p></div><span class="biz-tag">Analysis</span></div><h3 class="biz-subsection-title">资质证书概况</h3><div class="info-list"><div class="info-row"><span class="info-label">证书总数</span><span class="info-value">23312</span></div><div class="info-row"><span class="info-label">近一年获证数量</span><span class="info-value">1943</span></div><div class="info-row"><span class="info-label">初次获证日期</span><span class="info-value">2000-03-30</span></div><div class="info-row"><span class="info-label">最近获证日期</span><span class="info-value">2026-09-30</span></div><div class="info-row"><span class="info-label">涵盖证书类别</span><span class="info-value">环境标志产品、网络关键设备、强制性产品自我声明证书、运输资产保护协会 运输供应商最低安全要求认证、业务连续性管理体系、软件企业证书、网络安全专用产品、静电防护标准认证、温室气体排放和清除的量化和报告的规范及指南认证、电子信息产品污染控制自愿性认证、低压电器、电气与电子元件和产品有害物质过程控制管理体系认证、软件产品证书、煤矿安全标志、信息安全管理体系认证、商用密码产品销售许可、能源管理体系认证、无线电发射设备型号核准、环境管理体系认证、施工许可信息、CCC、其他自愿性工业产品认证、竣工验收备案信息、计算机信息系统安全专用产品销售许可证、排污登记信息、防爆电气、电信终端设备、供应链安全管理体系认证、商用密码产品、企业知识产权管理体系认证、所有未列明的其他管理体系认证、电器电子产品有害物质限制使用、在收费或合同基础上的生产服务、服务资质认证证书、商务部商务信用评级、测量管理体系、节能产品认证(不含建筑节能)、信息安全服务资质认证、中国职业健康安全管理体系认证、商品和服务在生命周期内的温室气体排放评价规范认证、网络关键设备和网络安全专用产品安全认证、无线局域网获证、音视频设备、家用和类似用途设备、售后服务认证、电信设备进网许可证、建设用地规划许可证、高新技术企业、质量管理体系认证(ISO9001)、信息技术设备、信息安全产品认证(未列入强制性产品认证目录内的信息安全产品)、商用密码产品品种和型号、电讯业质量管理体系认证、金融中介、保险和辅助服务、国家信息安全产品认证、排污许可证、国家保密局产品检测证书、运行维护、城市轨道交通产品认证、电路开关及保护或连接用电器装置、对外贸易经营备案、金融科技产品、安全防范产品、移动金融技术服务认证、铁路产品认证、电信业务经营许可证、非煤矿安全标志、金融科技产品(不含人民币现金机具)、光伏产品认证、信息技术服务管理体系认证、商品售后服务评价认证、碳披露类直接涉碳产品认证、守合同重信用、无线电发射设备型号核准证、可再生能源</span></div></div>
-<p class="biz-section-note">按荣誉/企业资质/行政许可/高新聚合资质条数</p><div class="chart-box"><h4 class="chart-title">资质类别分布</h4><div class="chart-canvas" data-chart="pie" data-spec="{&quot;type&quot;:&quot;pie&quot;,&quot;donut&quot;:true,&quot;data&quot;:[{&quot;name&quot;:&quot;荣誉资质&quot;,&quot;value&quot;:29.0},{&quot;name&quot;:&quot;企业资质&quot;,&quot;value&quot;:37.0},{&quot;name&quot;:&quot;行政许可&quot;,&quot;value&quot;:1075.0},{&quot;name&quot;:&quot;高新技术企业认证&quot;,&quot;value&quot;:5.0}]}"></div><details class="chart-data"><summary>数据明细</summary><div class="table-wrap"><table><thead><tr><th>资质类别</th><th>数量</th></tr></thead><tbody><tr><td>荣誉资质</td><td>29</td></tr><tr><td>企业资质</td><td>37</td></tr><tr><td>行政许可</td><td>1075</td></tr><tr><td>高新技术企业认证</td><td>5</td></tr></tbody></table></div></details></div>
-<p class="biz-section-note">按 qualificationClasses（科技研发与创新类/产业升级与转型类等）聚合</p><div class="chart-box"><h4 class="chart-title">资质类别聚类</h4><div class="chart-canvas" data-chart="pie" data-spec="{&quot;type&quot;:&quot;pie&quot;,&quot;donut&quot;:true,&quot;data&quot;:[{&quot;name&quot;:&quot;科技研发与创新类&quot;,&quot;value&quot;:9.0}]}"></div><details class="chart-data"><summary>数据明细</summary><div class="table-wrap"><table><thead><tr><th>资质类别聚类</th><th>数量</th></tr></thead><tbody><tr><td>科技研发与创新类</td><td>9</td></tr></tbody></table></div></details></div>
-<p class="biz-section-note">按 highTechIndustryList 聚合的高新技术领域覆盖次数</p><div class="chart-box"><h4 class="chart-title">高新技术领域覆盖</h4><div class="chart-canvas" data-chart="bar" data-spec="{&quot;type&quot;:&quot;bar&quot;,&quot;orient&quot;:&quot;v&quot;,&quot;names&quot;:[&quot;电子信息&quot;,&quot;先进制造与自动化&quot;],&quot;values&quot;:[9.0,9.0]}"></div><details class="chart-data"><summary>数据明细</summary><div class="table-wrap"><table><thead><tr><th>高新技术领域</th><th>覆盖次数</th></tr></thead><tbody><tr><td>电子信息</td><td>9</td></tr><tr><td>先进制造与自动化</td><td>9</td></tr></tbody></table></div></details></div>
-<p class="biz-section-note">按 publishYear 统计企业资质获证数量</p><div class="chart-box"><h4 class="chart-title">获证年度趋势</h4><div class="chart-canvas" data-chart="line" data-spec="{&quot;type&quot;:&quot;line&quot;,&quot;area&quot;:true,&quot;x&quot;:[&quot;2023&quot;,&quot;2024&quot;,&quot;2025&quot;],&quot;series&quot;:[{&quot;name&quot;:&quot;获证年度趋势&quot;,&quot;data&quot;:[5.0,3.0,1.0]}]}"></div><details class="chart-data"><summary>数据明细</summary><div class="table-wrap"><table><thead><tr><th>年份</th><th>数量</th></tr></thead><tbody><tr><td>2023</td><td>5</td></tr><tr><td>2024</td><td>3</td></tr><tr><td>2025</td><td>1</td></tr></tbody></table></div></details></div>
+<p class="biz-section-note">按荣誉/企业资质/行政许可/高新聚合资质条数</p><div class="chart-box"><h4 class="chart-title">资质类别分布</h4><div class="chart-frame" data-chart-state="static"><div class="chart-static"><svg width="984" height="300" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full" viewBox="0 0 984 300">
+<rect width="984" height="300" x="0" y="0" fill="none"></rect>
+<polyline points="500.1 63.3 501.3 48.4 516.3 48.4" fill="transparent" stroke="#0b5ca8" class="zr0-cls-0"></polyline>
+<polyline points="518.3 66.4 542.3 61.5 557.3 61.5" fill="transparent" stroke="#0284c7" class="zr0-cls-0"></polyline>
+<polyline points="475 265.6 472.5 280.4 457.5 280.4" fill="transparent" stroke="#0b3768" class="zr0-cls-0"></polyline>
+<polyline points="490.6 63 490.4 48 475.4 48" fill="transparent" stroke="#d97706" class="zr0-cls-0"></polyline>
+<path d="M492 63A102 102 0 0 1 508.1 64.3L502 102.8A63 63 0 0 0 492 102Z" fill="#0b5ca8" stroke="#fff" stroke-width="2" stroke-linejoin="round" ecmeta_series_index="0" ecmeta_data_index="0" ecmeta_ssr_type="chart" class="zr0-cls-1"></path>
+<path d="M508.1 64.3A102 102 0 0 1 528.1 69.6L514.3 106.1A63 63 0 0 0 502 102.8Z" fill="#0284c7" stroke="#fff" stroke-width="2" stroke-linejoin="round" ecmeta_series_index="0" ecmeta_data_index="1" ecmeta_ssr_type="chart" class="zr0-cls-2"></path>
+<path d="M528.1 69.6A102 102 0 1 1 489.2 63L490.3 102A63 63 0 1 0 514.3 106.1Z" fill="#0b3768" stroke="#fff" stroke-width="2" stroke-linejoin="round" ecmeta_series_index="0" ecmeta_data_index="2" ecmeta_ssr_type="chart" class="zr0-cls-3"></path>
+<path d="M489.2 63A102 102 0 0 1 492 63L492 102A63 63 0 0 0 490.3 102Z" fill="#d97706" stroke="#fff" stroke-width="2" stroke-linejoin="round" ecmeta_series_index="0" ecmeta_data_index="3" ecmeta_ssr_type="chart" class="zr0-cls-4"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" xml:space="preserve" transform="translate(521.2916 48.3695)" fill="#333" stroke="rgb(255,255,255)" stroke-width="2" paint-order="stroke" stroke-miterlimit="2">荣誉资质: 29 (2.53%)</text>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" xml:space="preserve" transform="translate(562.3476 61.4695)" fill="#333" stroke="rgb(255,255,255)" stroke-width="2" paint-order="stroke" stroke-miterlimit="2">企业资质: 37 (3.23%)</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" xml:space="preserve" transform="translate(452.526 280.3679)" fill="#333" stroke="rgb(255,255,255)" stroke-width="2" paint-order="stroke" stroke-miterlimit="2">行政许可: 1075 (93.8%)</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" xml:space="preserve" transform="translate(470.3964 48.011)" fill="#333" stroke="rgb(255,255,255)" stroke-width="2" paint-order="stroke" stroke-miterlimit="2">高新技术企业认证: 5 (0.44%)</text>
+<path d="M-5 -5l384 0l0 26l-384 0Z" transform="translate(305 279)" fill="rgb(0,0,0)" fill-opacity="0" stroke="#ccc" stroke-width="0" class="zr0-cls-5"></path>
+<path d="M3.5 0L21.5 0A3.5 3.5 0 0 1 25 3.5L25 10.5A3.5 3.5 0 0 1 21.5 14L3.5 14A3.5 3.5 0 0 1 0 10.5L0 3.5A3.5 3.5 0 0 1 3.5 0" transform="translate(306 280)" fill="#0b5ca8" stroke="#fff" stroke-width="2" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="round" ecmeta_series_index="0" ecmeta_data_index="0" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr0-cls-5"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" x="30" y="7" transform="translate(306 280)" fill="#333">荣誉资质</text>
+<path d="M-1 -1l75 0l0 16l-75 0Z" transform="translate(306 280)" fill="transparent" ecmeta_series_index="0" ecmeta_data_index="0" ecmeta_ssr_type="legend" class="zr0-cls-6"></path>
+<path d="M3.5 0L21.5 0A3.5 3.5 0 0 1 25 3.5L25 10.5A3.5 3.5 0 0 1 21.5 14L3.5 14A3.5 3.5 0 0 1 0 10.5L0 3.5A3.5 3.5 0 0 1 3.5 0" transform="translate(391 280)" fill="#0284c7" stroke="#fff" stroke-width="2" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="round" ecmeta_series_index="0" ecmeta_data_index="1" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr0-cls-5"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" x="30" y="7" transform="translate(391 280)" fill="#333">企业资质</text>
+<path d="M-1 -1l75 0l0 16l-75 0Z" transform="translate(391 280)" fill="transparent" ecmeta_series_index="0" ecmeta_data_index="1" ecmeta_ssr_type="legend" class="zr0-cls-6"></path>
+<path d="M3.5 0L21.5 0A3.5 3.5 0 0 1 25 3.5L25 10.5A3.5 3.5 0 0 1 21.5 14L3.5 14A3.5 3.5 0 0 1 0 10.5L0 3.5A3.5 3.5 0 0 1 3.5 0" transform="translate(476 280)" fill="#0b3768" stroke="#fff" stroke-width="2" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="round" ecmeta_series_index="0" ecmeta_data_index="2" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr0-cls-5"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" x="30" y="7" transform="translate(476 280)" fill="#333">行政许可</text>
+<path d="M-1 -1l75 0l0 16l-75 0Z" transform="translate(476 280)" fill="transparent" ecmeta_series_index="0" ecmeta_data_index="2" ecmeta_ssr_type="legend" class="zr0-cls-6"></path>
+<path d="M3.5 0L21.5 0A3.5 3.5 0 0 1 25 3.5L25 10.5A3.5 3.5 0 0 1 21.5 14L3.5 14A3.5 3.5 0 0 1 0 10.5L0 3.5A3.5 3.5 0 0 1 3.5 0" transform="translate(561 280)" fill="#d97706" stroke="#fff" stroke-width="2" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="round" ecmeta_series_index="0" ecmeta_data_index="3" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr0-cls-5"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" x="30" y="7" transform="translate(561 280)" fill="#333">高新技术企业认证</text>
+<path d="M-1 -1l119 0l0 16l-119 0Z" transform="translate(561 280)" fill="transparent" ecmeta_series_index="0" ecmeta_data_index="3" ecmeta_ssr_type="legend" class="zr0-cls-6"></path>
+<style ><![CDATA[
+.zr0-cls-0:hover {
+cursor:pointer;
+}
+.zr0-cls-1:hover {
+cursor:pointer;
+fill:rgba(12,101,184,1);
+}
+.zr0-cls-2:hover {
+cursor:pointer;
+fill:rgba(2,145,218,1);
+}
+.zr0-cls-3:hover {
+cursor:pointer;
+fill:rgba(12,60,114,1);
+}
+.zr0-cls-4:hover {
+cursor:pointer;
+fill:rgba(238,130,6,1);
+}
+.zr0-cls-5:hover {
+pointer-events:none;
+}
+.zr0-cls-6:hover {
+cursor:pointer;
+fill:rgba(0,0,0,0);
+}
+
+]]>
+
+</style>
+</svg></div><div class="chart-canvas" data-chart="pie" data-spec="{&quot;type&quot;:&quot;pie&quot;,&quot;donut&quot;:true,&quot;data&quot;:[{&quot;name&quot;:&quot;荣誉资质&quot;,&quot;value&quot;:29.0},{&quot;name&quot;:&quot;企业资质&quot;,&quot;value&quot;:37.0},{&quot;name&quot;:&quot;行政许可&quot;,&quot;value&quot;:1075.0},{&quot;name&quot;:&quot;高新技术企业认证&quot;,&quot;value&quot;:5.0}]}"></div><p class="chart-status" aria-live="polite"></p></div><details class="chart-data"><summary>数据明细</summary><div class="table-wrap"><table><thead><tr><th>资质类别</th><th>数量</th></tr></thead><tbody><tr><td>荣誉资质</td><td>29</td></tr><tr><td>企业资质</td><td>37</td></tr><tr><td>行政许可</td><td>1075</td></tr><tr><td>高新技术企业认证</td><td>5</td></tr></tbody></table></div></details></div>
+<p class="biz-section-note">按 qualificationClasses（科技研发与创新类/产业升级与转型类等）聚合</p><div class="chart-box"><h4 class="chart-title">资质类别聚类</h4><div class="chart-frame" data-chart-state="static"><div class="chart-static"><svg width="984" height="300" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full" viewBox="0 0 984 300">
+<rect width="984" height="300" x="0" y="0" fill="none"></rect>
+<polyline points="492 267 492 282 507 282" fill="transparent" stroke="#0b5ca8" class="zr1-cls-7"></polyline>
+<path d="M492 63A102 102 0 1 1 481.8 63.5A102 102 0 0 1 492 63M492 102A63 63 0 1 0 498.3 102.3A63 63 0 0 0 492 102Z" fill="#0b5ca8" stroke="#fff" stroke-width="2" stroke-linejoin="round" ecmeta_series_index="0" ecmeta_data_index="0" ecmeta_ssr_type="chart" class="zr1-cls-8"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" xml:space="preserve" transform="translate(512 282)" fill="#333" stroke="rgb(255,255,255)" stroke-width="2" paint-order="stroke" stroke-miterlimit="2">科技研发与创新类: 9 (100%)</text>
+<path d="M-5 -5l129 0l0 26l-129 0Z" transform="translate(432.5 279)" fill="rgb(0,0,0)" fill-opacity="0" stroke="#ccc" stroke-width="0" class="zr1-cls-9"></path>
+<path d="M3.5 0L21.5 0A3.5 3.5 0 0 1 25 3.5L25 10.5A3.5 3.5 0 0 1 21.5 14L3.5 14A3.5 3.5 0 0 1 0 10.5L0 3.5A3.5 3.5 0 0 1 3.5 0" transform="translate(433.5 280)" fill="#0b5ca8" stroke="#fff" stroke-width="2" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="round" ecmeta_series_index="0" ecmeta_data_index="0" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr1-cls-9"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" x="30" y="7" transform="translate(433.5 280)" fill="#333">科技研发与创新类</text>
+<path d="M-1 -1l119 0l0 16l-119 0Z" transform="translate(433.5 280)" fill="transparent" ecmeta_series_index="0" ecmeta_data_index="0" ecmeta_ssr_type="legend" class="zr1-cls-10"></path>
+<style ><![CDATA[
+.zr1-cls-7:hover {
+cursor:pointer;
+}
+.zr1-cls-8:hover {
+cursor:pointer;
+fill:rgba(12,101,184,1);
+}
+.zr1-cls-9:hover {
+pointer-events:none;
+}
+.zr1-cls-10:hover {
+cursor:pointer;
+fill:rgba(0,0,0,0);
+}
+
+]]>
+
+</style>
+</svg></div><div class="chart-canvas" data-chart="pie" data-spec="{&quot;type&quot;:&quot;pie&quot;,&quot;donut&quot;:true,&quot;data&quot;:[{&quot;name&quot;:&quot;科技研发与创新类&quot;,&quot;value&quot;:9.0}]}"></div><p class="chart-status" aria-live="polite"></p></div><details class="chart-data"><summary>数据明细</summary><div class="table-wrap"><table><thead><tr><th>资质类别聚类</th><th>数量</th></tr></thead><tbody><tr><td>科技研发与创新类</td><td>9</td></tr></tbody></table></div></details></div>
+<p class="biz-section-note">按 highTechIndustryList 聚合的高新技术领域覆盖次数</p><div class="chart-box"><h4 class="chart-title">高新技术领域覆盖</h4><div class="chart-frame" data-chart-state="static"><div class="chart-static"><svg width="984" height="300" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full" viewBox="0 0 984 300">
+<rect width="984" height="300" x="0" y="0" fill="none"></rect>
+<path d="M48 260.5L960 260.5" fill="transparent" stroke="#E0E6F1" class="zr2-cls-11"></path>
+<path d="M48 214.5L960 214.5" fill="transparent" stroke="#E0E6F1" class="zr2-cls-11"></path>
+<path d="M48 168.5L960 168.5" fill="transparent" stroke="#E0E6F1" class="zr2-cls-11"></path>
+<path d="M48 122.5L960 122.5" fill="transparent" stroke="#E0E6F1" class="zr2-cls-11"></path>
+<path d="M48 76.5L960 76.5" fill="transparent" stroke="#E0E6F1" class="zr2-cls-11"></path>
+<path d="M48 30.5L960 30.5" fill="transparent" stroke="#E0E6F1" class="zr2-cls-11"></path>
+<path d="M48 260.5L960 260.5" fill="transparent" stroke="#6E7079" stroke-linecap="round" class="zr2-cls-11"></path>
+<path d="M48.5 260L48.5 265" fill="transparent" stroke="#6E7079" class="zr2-cls-11"></path>
+<path d="M504.5 260L504.5 265" fill="transparent" stroke="#6E7079" class="zr2-cls-11"></path>
+<path d="M960.5 260L960.5 265" fill="transparent" stroke="#6E7079" class="zr2-cls-11"></path>
+<text dominant-baseline="central" text-anchor="end" style="font-size:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" transform="translate(40 260)" fill="#334155">0</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" transform="translate(40 214)" fill="#334155">2</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" transform="translate(40 168)" fill="#334155">4</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" transform="translate(40 122)" fill="#334155">6</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" transform="translate(40 76)" fill="#334155">8</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" transform="translate(40 30)" fill="#334155">10</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" y="5.5" transform="translate(276 268)" fill="#334155">电子信息</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" y="5.5" transform="translate(732 268)" fill="#334155">先进制造与自动化</text>
+<path d="M255 260l42 0l0 -207l-42 0Z" fill="#0b5ca8" ecmeta_series_index="0" ecmeta_data_index="0" ecmeta_ssr_type="chart" class="zr2-cls-12"></path>
+<path d="M711 260l42 0l0 -207l-42 0Z" fill="#0b5ca8" ecmeta_series_index="0" ecmeta_data_index="1" ecmeta_ssr_type="chart" class="zr2-cls-12"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" y="-5.5" transform="translate(276 48)" fill="#333" stroke="rgb(255,255,255)" stroke-width="2" paint-order="stroke" stroke-miterlimit="2">9</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" y="-5.5" transform="translate(732 48)" fill="#333" stroke="rgb(255,255,255)" stroke-width="2" paint-order="stroke" stroke-miterlimit="2">9</text>
+<path d="M-5 -5l10 0l0 10l-10 0Z" transform="translate(492 5)" fill="rgb(0,0,0)" fill-opacity="0" stroke="#ccc" stroke-width="0" class="zr2-cls-11"></path>
+<style ><![CDATA[
+.zr2-cls-11:hover {
+pointer-events:none;
+}
+.zr2-cls-12:hover {
+cursor:pointer;
+fill:rgba(12,101,184,1);
+}
+
+]]>
+
+</style>
+</svg></div><div class="chart-canvas" data-chart="bar" data-spec="{&quot;type&quot;:&quot;bar&quot;,&quot;orient&quot;:&quot;v&quot;,&quot;names&quot;:[&quot;电子信息&quot;,&quot;先进制造与自动化&quot;],&quot;values&quot;:[9.0,9.0]}"></div><p class="chart-status" aria-live="polite"></p></div><details class="chart-data"><summary>数据明细</summary><div class="table-wrap"><table><thead><tr><th>高新技术领域</th><th>覆盖次数</th></tr></thead><tbody><tr><td>电子信息</td><td>9</td></tr><tr><td>先进制造与自动化</td><td>9</td></tr></tbody></table></div></details></div>
+<p class="biz-section-note">按 publishYear 统计企业资质获证数量</p><div class="chart-box"><h4 class="chart-title">获证年度趋势</h4><div class="chart-frame" data-chart-state="static"><div class="chart-static"><svg width="984" height="300" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full" viewBox="0 0 984 300">
+<rect width="984" height="300" x="0" y="0" fill="none"></rect>
+<path d="M48 260.5L960 260.5" fill="transparent" stroke="#E0E6F1" class="zr3-cls-13"></path>
+<path d="M48 214.5L960 214.5" fill="transparent" stroke="#E0E6F1" class="zr3-cls-13"></path>
+<path d="M48 168.5L960 168.5" fill="transparent" stroke="#E0E6F1" class="zr3-cls-13"></path>
+<path d="M48 122.5L960 122.5" fill="transparent" stroke="#E0E6F1" class="zr3-cls-13"></path>
+<path d="M48 76.5L960 76.5" fill="transparent" stroke="#E0E6F1" class="zr3-cls-13"></path>
+<path d="M48 30.5L960 30.5" fill="transparent" stroke="#E0E6F1" class="zr3-cls-13"></path>
+<path d="M48 260.5L960 260.5" fill="transparent" stroke="#6E7079" stroke-linecap="round" class="zr3-cls-13"></path>
+<path d="M48.5 260L48.5 265" fill="transparent" stroke="#6E7079" class="zr3-cls-13"></path>
+<path d="M352.5 260L352.5 265" fill="transparent" stroke="#6E7079" class="zr3-cls-13"></path>
+<path d="M656.5 260L656.5 265" fill="transparent" stroke="#6E7079" class="zr3-cls-13"></path>
+<path d="M960.5 260L960.5 265" fill="transparent" stroke="#6E7079" class="zr3-cls-13"></path>
+<text dominant-baseline="central" text-anchor="end" style="font-size:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" transform="translate(40 260)" fill="#334155">0</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" transform="translate(40 214)" fill="#334155">1</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" transform="translate(40 168)" fill="#334155">2</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" transform="translate(40 122)" fill="#334155">3</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" transform="translate(40 76)" fill="#334155">4</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" transform="translate(40 30)" fill="#334155">5</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" y="5.5" transform="translate(200 268)" fill="#334155">2023</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" y="5.5" transform="translate(504 268)" fill="#334155">2024</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" y="5.5" transform="translate(808 268)" fill="#334155">2025</text>
+<g clip-path="url(#static-chart-3-zr3-c0)">
+<path d="M200 30C200 30 352 76 504 122C656 168 808 214 808 214L808 260L504 260L200 260Z" fill="#0b5ca8" fill-opacity="0.18" class="zr3-cls-15"></path>
+<path d="M200 30C200 30 352 76 504 122C656 168 808 214 808 214" fill="transparent" stroke="#0b5ca8" stroke-width="2" stroke-linejoin="bevel" class="zr3-cls-16"></path>
+</g>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(2,0,0,2,200,30)" fill="#fff" stroke="#0b5ca8" ecmeta_series_index="0" ecmeta_data_index="0" ecmeta_ssr_type="chart" class="zr3-cls-17"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(2,0,0,2,504,122)" fill="#fff" stroke="#0b5ca8" ecmeta_series_index="0" ecmeta_data_index="1" ecmeta_ssr_type="chart" class="zr3-cls-17"></path>
+<path d="M1 0A1 1 0 1 1 1 -0.1A1 1 0 0 1 1 0" transform="matrix(2,0,0,2,808,214)" fill="#fff" stroke="#0b5ca8" ecmeta_series_index="0" ecmeta_data_index="2" ecmeta_ssr_type="chart" class="zr3-cls-17"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" y="-5.5" transform="translate(200 22)" fill="#333" stroke="rgb(255,255,255)" stroke-width="2" paint-order="stroke" stroke-miterlimit="2">5</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" y="-5.5" transform="translate(504 114)" fill="#333" stroke="rgb(255,255,255)" stroke-width="2" paint-order="stroke" stroke-miterlimit="2">3</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" y="-5.5" transform="translate(808 206)" fill="#333" stroke="rgb(255,255,255)" stroke-width="2" paint-order="stroke" stroke-miterlimit="2">1</text>
+<path d="M-5 -5l107 0l0 23.2l-107 0Z" transform="translate(443.5 5)" fill="rgb(0,0,0)" fill-opacity="0" stroke="#ccc" stroke-width="0" class="zr3-cls-13"></path>
+<path d="M0 7L25 7" transform="translate(444.5 4.6)" fill="#000" stroke="#0b5ca8" stroke-width="2" stroke-linecap="butt" stroke-miterlimit="10" class="zr3-cls-13"></path>
+<path d="M18.1 7A5.6 5.6 0 1 1 18.1 6.4A5.6 5.6 0 0 1 18.1 7" transform="translate(444.5 4.6)" fill="#fff" stroke="#0b5ca8" stroke-width="2" stroke-linecap="butt" stroke-miterlimit="10" class="zr3-cls-13"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;" x="30" y="7" transform="translate(444.5 4.6)" fill="#333">获证年度趋势</text>
+<path d="M-1 0.4l97 0l0 13.2l-97 0Z" transform="translate(444.5 4.6)" fill="transparent" ecmeta_series_index="0" ecmeta_data_index="0" ecmeta_ssr_type="legend" class="zr3-cls-18"></path>
+<defs >
+<clipPath id="static-chart-3-zr3-c0">
+<path d="M47 29l914 0l0 232l-914 0Z" fill="#000" class="zr3-cls-14"></path>
+</clipPath>
+</defs>
+<style ><![CDATA[
+.zr3-cls-13:hover {
+pointer-events:none;
+}
+.zr3-cls-14:hover {
+cursor:pointer;
+fill:rgba(0,0,0,1);
+}
+.zr3-cls-15:hover {
+cursor:pointer;
+fill:rgba(12,101,184,1);
+}
+.zr3-cls-16:hover {
+cursor:pointer;
+}
+.zr3-cls-17:hover {
+cursor:pointer;
+fill:rgba(255,255,255,1);
+}
+.zr3-cls-18:hover {
+cursor:pointer;
+fill:rgba(0,0,0,0);
+}
+
+]]>
+
+</style>
+</svg></div><div class="chart-canvas" data-chart="line" data-spec="{&quot;type&quot;:&quot;line&quot;,&quot;area&quot;:true,&quot;x&quot;:[&quot;2023&quot;,&quot;2024&quot;,&quot;2025&quot;],&quot;series&quot;:[{&quot;name&quot;:&quot;获证年度趋势&quot;,&quot;data&quot;:[5.0,3.0,1.0]}]}"></div><p class="chart-status" aria-live="polite"></p></div><details class="chart-data"><summary>数据明细</summary><div class="table-wrap"><table><thead><tr><th>年份</th><th>数量</th></tr></thead><tbody><tr><td>2023</td><td>5</td></tr><tr><td>2024</td><td>3</td></tr><tr><td>2025</td><td>1</td></tr></tbody></table></div></details></div>
 <h3 class="biz-subsection-title">荣誉资质</h3><p class="biz-section-note">共 29 条，当前页展示 10 条</p><div class="table-wrap"><table><thead><tr><th>资质类型</th><th>资质级别</th><th>认定机关</th><th>发布日期</th><th>有效期</th></tr></thead><tbody><tr><td>企业技术中心</td><td>国家级</td><td>中华人民共和国国家发展和改革委员会</td><td>2026-06-02</td><td>2026-06-02、2029-06-02</td></tr><tr><td>专利预审备案企业</td><td>省级</td><td>中国(广东)知识产权保护中心</td><td>2026-03-31</td><td>2026-03-31</td></tr><tr><td>重点实验室</td><td>国家级</td><td>国家矿山安全监察局</td><td>2024-02-27</td><td>2024-02-27、2027-02-27</td></tr><tr><td>技术创新示范企业</td><td>国家级</td><td>工业和信息化部</td><td>2024-01-17</td><td>2024-01-17、2027-01-17</td></tr><tr><td>技术创新示范企业</td><td>国家级</td><td>中华人民共和国工业和信息化部</td><td>2024-01-12</td><td>2024-01-11、2027-01-11</td></tr><tr><td>高新技术企业</td><td>国家级</td><td>高新技术企业认定管理工作网</td><td>2023-12-08</td><td>2023-11-15、2026-11-15</td></tr><tr><td>工程研究中心</td><td>省级</td><td>广西壮族自治区发展和改革委员会</td><td>2023-12-05</td><td>2023-12-05、2026-12-05</td></tr><tr><td>工业设计中心</td><td>国家级</td><td>中华人民共和国工业和信息化部</td><td>2023-11-16</td><td>2023-11-16、2026-11-16</td></tr><tr><td>工程技术研究中心</td><td>省级</td><td>广西壮族自治区科学技术厅</td><td>2023-08-21</td><td>2023-08-21、2026-08-21</td></tr><tr><td>重点实验室</td><td>省级</td><td>广西壮族自治区科学技术厅</td><td>2023-08-21</td><td>2023-08-21、2026-08-21</td></tr></tbody></table></div>
 <h3 class="biz-subsection-title">企业资质</h3><p class="biz-section-note">上游总量 37 条，当前页去重展示 9 条</p><div class="table-wrap"><table><thead><tr><th>资质类型</th><th>资质类别聚类</th><th>资质级别</th><th>发布单位</th><th>发布日期</th><th>获证年度</th></tr></thead><tbody><tr><td>企业技术中心</td><td>科技研发与创新类</td><td>国家级</td><td>中华人民共和国国家发展和改革委员会</td><td>2026-06-02</td><td>2025</td></tr><tr><td>重点实验室</td><td>科技研发与创新类</td><td>国家级</td><td>国家矿山安全监察局政策法规和科技装备司</td><td>2024-02-27</td><td>2024</td></tr><tr><td>重点实验室</td><td>科技研发与创新类</td><td>国家级</td><td>国家矿山安全监察局</td><td>2024-02-27</td><td>2024</td></tr><tr><td>技术创新示范企业</td><td>科技研发与创新类</td><td>国家级</td><td>工业和信息化部</td><td>2024-01-17</td><td>2023</td></tr><tr><td>技术创新示范企业</td><td>科技研发与创新类</td><td>国家级</td><td>中华人民共和国工业和信息化部</td><td>2024-01-12</td><td>2023</td></tr><tr><td>技术创新示范企业</td><td>科技研发与创新类</td><td>国家级</td><td>中华人民共和国工业和信息化部</td><td>2024-01-12</td><td>2024</td></tr><tr><td>高新技术企业备案公示企业</td><td>科技研发与创新类</td><td>国家级</td><td>高新技术企业认定管理工作网</td><td>2023-12-08</td><td>2023</td></tr><tr><td>高新技术企业备案公示企业</td><td>科技研发与创新类</td><td>国家级</td><td>全国高新技术企业认定管理工作领导小组办公室</td><td>2023-12-08</td><td>2023</td></tr><tr><td>工程研究中心</td><td>科技研发与创新类</td><td>省级</td><td>广西壮族自治区发展和改革委员会</td><td>2023-12-05</td><td>2023</td></tr></tbody></table></div>
 <h3 class="biz-subsection-title">行政许可</h3><p class="biz-section-note">共 1075 条，当前页展示 10 条</p><div class="table-wrap"><table><thead><tr><th>许可事项</th><th>决定文书号</th><th>许可机关</th><th>当前状态</th><th>有效期自</th><th>有效期至</th></tr></thead><tbody><tr><td>特种设备使用登记（按台/套办理）</td><td>梯11粤B71104（25）</td><td>深圳市市场监督管理局龙岗监管局</td><td>-</td><td>2025-04-27</td><td>2099-12-31</td></tr><tr><td>特种设备使用登记（按台/套办理）</td><td>梯12粤B58085（24）</td><td>深圳市市场监督管理局龙华监管局</td><td>-</td><td>2024-11-01</td><td>2099-12-31</td></tr><tr><td>特种设备使用登记（按台/套办理）</td><td>梯11粤B98219（26）</td><td>深圳市市场监督管理局龙岗监管局</td><td>-</td><td>2026-03-27</td><td>2099-12-31</td></tr><tr><td>特种设备使用登记（按台/套办理）</td><td>梯32粤B45842（24）</td><td>深圳市市场监督管理局龙岗监管局</td><td>-</td><td>2024-04-24</td><td>2099-12-31</td></tr><tr><td>特种设备使用登记（按台/套办理）</td><td>容15粤B17257（24）</td><td>深圳市市场监督管理局龙华监管局</td><td>-</td><td>2024-12-25</td><td>2099-12-31</td></tr><tr><td>不实施进一步审查决定书</td><td>反执二审查决定〔2024〕95号</td><td>国家市场监督管理总局</td><td>-</td><td>2024-02-08</td><td>9999-12-31</td></tr><tr><td>特种设备使用登记（按台/套办理）</td><td>容17粤B17114（24）</td><td>深圳市市场监督管理局龙华监管局</td><td>-</td><td>2024-12-23</td><td>2099-12-31</td></tr><tr><td>特种设备使用登记（按台/套办理）</td><td>梯11粤B60722（24）</td><td>深圳市市场监督管理局龙岗监管局</td><td>-</td><td>2024-12-05</td><td>2099-12-31</td></tr><tr><td>特种设备使用登记（按台/套办理）</td><td>容17粤B17149（24）</td><td>深圳市市场监督管理局龙华监管局</td><td>-</td><td>2024-12-23</td><td>2099-12-31</td></tr><tr><td>特种设备使用登记（按台/套办理）</td><td>梯11粤B71105（25）</td><td>深圳市市场监督管理局龙岗监管局</td><td>-</td><td>2025-04-27</td><td>2099-12-31</td></tr></tbody></table></div>
