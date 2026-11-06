@@ -19,6 +19,7 @@ This file never prints secrets; MCP credentials live in the server's own .env.
 from __future__ import annotations
 
 import argparse
+import copy
 import datetime as dt
 import json
 import pathlib
@@ -435,7 +436,7 @@ def build_core_analysis(profile: Any, honor: Any, enterprise: Any, license_p: An
         {"key": "license_records", "title": "行政许可", "kind": "table", "note": page_note(license_p, license_rows),
          "columns": [("许可事项", "许可事项"), ("决定文书号", "决定文书号"), ("许可机关", "许可机关"), ("当前状态", "当前状态"), ("有效期自", "有效期自"), ("有效期至", "有效期至")]},
         {"key": "hitech_records", "title": "高新技术企业认证", "kind": "table", "note": page_note(hitech, hitech_rows),
-         "columns": [("证书编号", "证书编号"), ("资质类别", "资质类别"), ("发证机构", "发证机构"), ("颁证日期", "颁证日期"), ("截止日期", "截止日期"), ("证书状态", "证书状态")]},
+         "columns": [("证书编号", "证书编号"), ("资质类别", "资质类别"), ("发证机构", "发证机构"), ("颁证日期", "颁证日期"), ("截止日期", "截止日期"), ("证书状态", "证书状态"), ("有效性", "有效性")]},
     ]
 
     return {
@@ -564,18 +565,51 @@ def _build_license_rows(license_p: Any) -> List[Dict[str, Any]]:
     return rows
 
 
+def _cert_validity(status: Any, expire: Any, as_of: Optional[dt.date] = None) -> str:
+    """Classify certificate validity without treating unknown as invalid/current."""
+    status_text = _text(status)
+    expire_text = _text(expire)
+    today = as_of or dt.date.today()
+    expired_status = any(token in status_text for token in ("过期", "失效", "注销", "撤销"))
+    valid_status = any(token in status_text for token in ("有效", "正常", "生效")) and not expired_status
+    expire_date: Optional[dt.date] = None
+    if expire_text and expire_text not in ("-", "—"):
+        try:
+            expire_date = dt.date.fromisoformat(expire_text[:10])
+        except ValueError:
+            expire_date = None
+    if expired_status:
+        if expire_date and expire_date > today:
+            return "状态失效但截止日期未到（冲突，需核验）"
+        return "已失效（上游状态）"
+    if valid_status:
+        if expire_date and expire_date < today:
+            return "状态有效但截止日期已过（冲突，需核验）"
+        if expire_date and (expire_date - today).days <= 90:
+            return f"有效（{expire_date.isoformat()} 到期，临近）"
+        return "有效（上游状态）"
+    if expire_date:
+        if expire_date < today:
+            return f"已过期（{expire_date.isoformat()}）"
+        return "截止日期未过（状态未标注）"
+    return "日期与状态不明"
+
+
 def _build_hitech_rows(hitech: Any) -> List[Dict[str, Any]]:
     rows = []
     for item in _first_list(hitech):
         if not isinstance(item, dict) or not _has_evidence(item):
             continue
+        status = _text(item.get("certStatus")) or "-"
+        expire = _text(item.get("certExpireTime")) or "-"
         rows.append({
             "证书编号": _text(item.get("certId")) or "-",
             "资质类别": _text(item.get("certType")) or "-",
             "发证机构": _text(item.get("certAuthority")) or "-",
             "颁证日期": _text(item.get("certPublishTime")) or "-",
-            "截止日期": _text(item.get("certExpireTime")) or "-",
-            "证书状态": _text(item.get("certStatus")) or "-",
+            "截止日期": expire,
+            "证书状态": status,
+            "有效性": _cert_validity(status, expire),
         })
     return rows
 
@@ -638,28 +672,36 @@ def build_insights(subject: Mapping[str, Any], core: Mapping[str, Any], metrics:
                 "evidence": f"“{conc['top']}”类资质占比约 {conc['top_share']:.0f}%，前 2 类合计 {conc['cr']:.0f}%（CR2）。",
                 "interpretation": "CR2 仅描述本次返回类别的数量集中程度，不能单独判断业务聚焦、专业化或多元化程度。",
             })
-    # 高新证书有效性（基于 hitech_records 的证书状态字段）
+    # 高新证书有效性（基于有效性分类，不把未知当无效）
     hitech_rows = core.get("hitech_records") or []
     if hitech_rows:
-        valid = sum(1 for r in hitech_rows if str(r.get("证书状态", "")).strip() in ("有效", "正常", "生效"))
-        total_h = len(hitech_rows)
-        if total_h:
-            insights.append({
-                "feature": "高新证书有效性",
-                "evidence": f"高新证书 {total_h} 条中有效 {valid} 条（{valid / total_h * 100:.0f}%）。",
-                "interpretation": "该比例仅按返回记录中的状态文本计算；优惠适用、续期要求和实际效力需以主管部门记录为准。",
-            })
+        categories: Dict[str, int] = {}
+        for row in hitech_rows:
+            label = str(row.get("有效性") or "")
+            if label.startswith("有效"):
+                bucket = "有效（临近到期）" if "临近" in label else "有效"
+            elif label.startswith("已过期") or label.startswith("已失效"):
+                bucket = "已过期/失效"
+            elif "冲突" in label:
+                bucket = "状态与日期冲突"
+            else:
+                bucket = "日期/状态不明"
+            categories[bucket] = categories.get(bucket, 0) + 1
+        detail = "、".join(f"{k} {v} 条" for k, v in categories.items())
+        insights.append({
+            "feature": "高新证书有效性",
+            "evidence": f"高新证书 {len(hitech_rows)} 条：{detail}。",
+            "interpretation": "“日期/状态不明”不等于已失效，也不等于当前有效；优惠适用、续期要求和实际效力需以主管部门记录核验。",
+        })
     cert_profile = core.get("cert_profile") or {}
     cert_types = cert_profile.get("涵盖证书类别")
     if cert_types:
-        try:
-            n_types = len([t for t in str(cert_types).replace("、", "/").split("/") if t.strip()])
-        except Exception:
-            n_types = 0
+        terms = [t.strip() for t in str(cert_types).replace("、", "/").split("/") if t.strip()]
+        preview = "、".join(terms[:12])
         insights.append({
             "feature": "资质类别覆盖",
-            "evidence": f"涵盖证书类别约 {n_types or '多'} 类：{cert_types}。",
-            "interpretation": "类别数量只描述返回证书的分类覆盖，不能单独推断业务线数量或专业化程度。",
+            "evidence": f"涵盖证书类别 {len(terms)} 类；前 12 类为：{preview}{' 等' if len(terms) > 12 else ''}。",
+            "interpretation": "类别数量只描述返回证书的分类覆盖，不能单独推断业务线数量或专业化程度；完整清单见概况字段。",
         })
     # 资质类别聚类集中度（HIGHEST VALUE — qualificationClasses）
     class_rows = core.get("class_cluster") or []
@@ -713,7 +755,7 @@ def build_abstract(subject: Mapping[str, Any], core: Mapping[str, Any], metrics:
     if metrics:
         kv = "、".join(f"{m['label']} {m['value']}" for m in metrics[:5])
         parts.append(f"关键指标包括：{kv}。")
-    parts.append("报告同时给出资质资产规模、近期获证活跃度与高新技术资质的结构化解读，便于招投标、政策申报与商业合作决策参考。")
+    parts.append("报告同时给出资质资产规模、近期获证活跃度与高新技术资质的结构化解读，供资质核验与材料准备参考，不构成投标资格、补贴资格或合规结论。")
     return "".join(parts)
 
 
@@ -738,7 +780,30 @@ def build_dry_run_payload(raw: str, keyword_type: str) -> Dict[str, Any]:
 # Assembly
 # --------------------------------------------------------------------------- #
 
+def _dedupe_metrics(metrics: Sequence[Mapping[str, Any]]) -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    by_label: Dict[str, Dict[str, Any]] = {}
+    for item in metrics:
+        if not isinstance(item, Mapping):
+            continue
+        row = dict(item)
+        label = str(row.get("label") or "")
+        if not label:
+            continue
+        if label in by_label:
+            existing = by_label[label]
+            if row.get("delta") and not existing.get("delta"):
+                existing["delta"] = row.get("delta")
+            if row.get("hint") and row.get("hint") not in str(existing.get("hint") or ""):
+                existing["hint"] = f"{existing.get('hint')}；{row.get('hint')}".strip("；")
+            continue
+        by_label[label] = row
+        out.append(row)
+    return out
+
+
 def _assemble(subject: Mapping[str, Any], core: Mapping[str, Any], metrics: Sequence[Mapping[str, Any]], *, dry_run: bool) -> Dict[str, Any]:
+    metrics = _dedupe_metrics(metrics)
     abstract = build_abstract(subject, core, metrics)
     records = build_records(core)
     insights = build_insights(subject, core, metrics)
@@ -761,7 +826,7 @@ def _assemble(subject: Mapping[str, Any], core: Mapping[str, Any], metrics: Sequ
         import sys
         print("⚠️ 质量门禁警告: 所有核心分析维度均无数据", file=sys.stderr)
     title = f"{subject.get('enterprise') or '目标企业'} 资质大数据报告"
-    return {
+    report = {
         "report_type": REPORT_TYPE,
         "title": title,
         "banner": REPORT_BANNER,
@@ -782,6 +847,7 @@ def _assemble(subject: Mapping[str, Any], core: Mapping[str, Any], metrics: Sequ
             "quality_report": quality_report,
         },
     }
+    return apply_content_review(report)
 
 
 @paid_call_scope
@@ -813,6 +879,145 @@ def build_payload(raw: str, keyword_type: str, page_size: int, max_pages: Option
     _enrich_metrics_with_profile(metrics, resolved.get("record") if isinstance(resolved, dict) else None)
     report = _assemble(subject, core, metrics, dry_run=False)
     return attach_pagination(report, {"企业资质": enterprise_q, "行政许可": license_p, "高新技术企业认证": hitech})
+
+
+def _refresh_quality_report(report: Dict[str, Any]) -> Dict[str, Any]:
+    """Refresh section-fill metrics after offline review changed sections.
+
+    ``0`` is a populated value; None/""/[]/{} and documented empty sentinels are
+    empty. coverage_pct is section fill only, never an accuracy claim.
+    """
+    core = report.get("core_analysis") or {}
+    sections = core.get("sections")
+    if isinstance(sections, list) and sections:
+        total = len(sections)
+        populated = sum(1 for s in sections if isinstance(s, dict) and _has_evidence(core.get(s.get("key"))))
+    else:
+        keys = [k for k in core if k != "sections"]
+        total = max(1, len(keys))
+        populated = sum(1 for k in keys if _has_evidence(core.get(k)))
+    source = report.setdefault("data_source", {})
+    source["quality_report"] = {
+        "total_sections": total,
+        "populated_sections": populated,
+        "empty_sections": total - populated,
+        "coverage_pct": round(populated / max(1, total) * 100),
+        "metric": "section_fill_rate",
+        "note": "章节填充率，仅表示有返回内容的 section 占比，不是内容准确率",
+    }
+    return report
+
+
+def _merge_review_records(previous: Any, current: Sequence[Mapping[str, Any]]) -> List[Dict[str, Any]]:
+    """Keep earlier review records when the same report is processed again."""
+    merged: List[Dict[str, Any]] = []
+    seen = set()
+    for item in list(previous or []) + list(current or []):
+        if not isinstance(item, Mapping):
+            continue
+        row = dict(item)
+        key = json.dumps(row, ensure_ascii=False, sort_keys=True, default=str)
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(row)
+    return merged
+
+
+def apply_content_review(report: Mapping[str, Any], source_evidence: Optional[Any] = None) -> Dict[str, Any]:
+    """Rebuild qualification narrative from fields already present in a report.
+
+    Pure/offline: no MCP call and no new facts. Repairs visible payload defects:
+
+    * duplicate "近一年获证" metric cards;
+    * high-tech certificate validity where a missing status/date was previously
+      counted as invalid (and therefore implied 80% invalid);
+    * an unbounded certificate-category list that was cut mid-term;
+    * overclaiming language about bidding/subsidy eligibility.
+    """
+    out = copy.deepcopy(dict(report))
+    corrections: List[Dict[str, Any]] = []
+    subject = out.get("subject") or {}
+    core = out.get("core_analysis") or {}
+    source = out.get("data_source") or {}
+    previous_review = source.get("content_review") or {}
+    generated_at = source.get("generated_at")
+    try:
+        as_of = dt.datetime.fromisoformat(str(generated_at)).date() if generated_at else dt.date.today()
+    except (ValueError, TypeError):
+        as_of = dt.date.today()
+
+    # Recompute validity for each high-tech row and add the column.
+    hitech_rows = core.get("hitech_records") or []
+    for row in hitech_rows:
+        if not isinstance(row, dict):
+            continue
+        before = row.get("有效性")
+        after = _cert_validity(row.get("证书状态"), row.get("截止日期"), as_of)
+        row["有效性"] = after
+        if after != before:
+            corrections.append({
+                "field": "core_analysis.hitech_records[].有效性",
+                "before": before,
+                "after": after,
+                "reason": "按证书状态与截止日期分别判断；状态/日期不明不直接计为失效",
+            })
+    sections = [s for s in (core.get("sections") or []) if isinstance(s, dict)]
+    for section in sections:
+        if section.get("key") == "hitech_records":
+            cols = [c for c in (section.get("columns") or []) if isinstance(c, (list, tuple))]
+            if not any(c[0] == "有效性" for c in cols):
+                cols.append(("有效性", "有效性"))
+                section["columns"] = cols
+                corrections.append({
+                    "field": "core_analysis.sections[hitech_records].columns",
+                    "before": "无有效性列",
+                    "after": "增加“有效性”列",
+                    "reason": "避免把日期/状态不明的证书当作已失效或当前有效",
+                })
+    core["sections"] = sections
+
+    # Dedupe metrics by label while retaining the richer delta/hint.
+    before_metrics = [m for m in (out.get("metrics") or []) if isinstance(m, dict)]
+    metrics = _dedupe_metrics(before_metrics)
+    if len(metrics) != len(before_metrics):
+        corrections.append({
+            "field": "metrics",
+            "before": f"{len(before_metrics)} 张指标卡",
+            "after": f"{len(metrics)} 张指标卡",
+            "reason": "“近一年获证”等同一指标被 build_metrics 与派生逻辑重复添加",
+        })
+    out["metrics"] = metrics
+
+    # Rebuild insights so the validity sentence matches the corrected classification.
+    insights = build_insights(subject, core, metrics)
+    out["insights"] = insights
+    out["executive_summary"] = [item["interpretation"] for item in insights][:5] or [build_abstract(subject, core, metrics)[:120]]
+    abstract = build_abstract(subject, core, metrics)
+    old_phrase = "便于招投标、政策申报与商业合作决策参考"
+    if old_phrase in abstract:
+        abstract = abstract.replace(old_phrase, "供资质核验与材料准备参考，不构成投标资格、补贴资格或合规结论")
+        corrections.append({
+            "field": "abstract",
+            "before": old_phrase,
+            "after": "供资质核验与材料准备参考，不构成投标资格、补贴资格或合规结论",
+            "reason": "摘要超出证据边界，暗示可直接用于投标/补贴资格判断",
+        })
+    out["abstract"] = abstract
+    out["summary"] = abstract
+    source["content_review"] = {
+        "mode": "offline_report_fields_only",
+        "source_evidence_supplied": bool(source_evidence),
+        "reviewed_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
+        "corrections": _merge_review_records(previous_review.get("corrections"), corrections),
+        "not_changed": [
+            "未重新查询 MCP；未新增证书、许可、认定或有效期事实",
+            "已过期证书仍保留原记录，只增加有效性说明",
+            "未删除任何类别；完整类别清单仍在概况字段中",
+        ],
+    }
+    out["data_source"] = source
+    return _refresh_quality_report(out)
 
 
 # --------------------------------------------------------------------------- #

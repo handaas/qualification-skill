@@ -71,6 +71,34 @@ description: Use for generating a professional qualification big-data report (�
 4. **渲染三件套**：`compose_report.py --enterprise ... --output ... --report-output ...` 直接产出 JSON + HTML + Markdown；或 `render_report.py --input ... --output ...` 重渲染。
 5. **返回路径**：返回 JSON、HTML、Markdown 文件路径，以及企业全称映射与数据口径。
 
+- **渲染前置检查**：执行会产出含图表 HTML / PDF 的报告命令前，先验证 `node --version` 与本 skill 自带 `assets/vendor/echarts.min.js` 存在；内嵌静态 SVG 的生成需要 Node.js（推荐当前 LTS，无需 npm 包），缺失时报告生成明确报错。查看已生成的 HTML 与 Markdown 输出不需要 Node。
+
+## AI 内容审校（正常生成已内置，离线复核可重放）
+
+正常生成（`build_payload` / CLI 非 `--dry-run`）在组装阶段已自动执行 `apply_content_review`，证书有效性按报告 `data_source.generated_at` 判定；`--dry-run` 与正常生成共用同一条路径且只执行一次。离线入口仅用于复核已有报告，重复调用保留此前 `content_review.corrections`。以下语义核对仍须由当前 AI 逐项完成。
+
+证书“记录数”“类别数”“有效数”是不同口径；以下核对必须由当前 AI 完成，并在审校记录中保留原值、规范值与证据位置。
+
+1. **证书有效性**：按 `证书状态` 与 `截止日期` 分别判断：有效、临近到期（≤90 天）、已过期/失效、状态与日期冲突、日期/状态不明。状态或日期不明不得直接算“无效”，也不得默认“当前有效”；`9999-12-31` 标为上游长期有效。
+2. **同值指标去重**：`近一年获证` 只能出现一张卡；`证书总数`、各来源条数、`资质类别数`、`资质类别聚类` 分别说明是“证书记录/来源类别/聚类类别”，不可互相替代。
+3. **类别覆盖**：`涵盖证书类别` 可长达数十项，摘要只列前 12 类并写“等 N 类”；不得截断到半个词，也不得把类别数当业务线数。
+4. **重复记录**：仅删除结构完全一致的记录；同名不同证书编号、不同有效期、不同发证机构不得合并。过期证书保留为历史记录。
+5. **结论边界**：不写“具备投标资格/可申报补贴/合规”等结论；摘要使用“供资质核验与材料准备参考”。高新认证记录数不等于持续有效或优惠已适用。
+6. **主体确认**：未唯一确认主体时不调用资质详情、不生成资质结论。
+
+离线修订已有报告（不调用 MCP，不覆盖 `examples/`）：
+
+```python
+import json
+from compose_report import apply_content_review
+
+report = json.load(open("examples/01-supplier-cert/report.json", encoding="utf-8"))
+revised = apply_content_review(report)
+json.dump(revised, open("output/content-quality-review/01-supplier-cert/report.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+```
+
+`apply_content_review` 去重“近一年获证”、按状态与截止日期重算高新证书有效性、增加“有效性”列、压缩类别覆盖文案，并把摘要改为不构成资格结论；不新增证书、许可或认定事实。
+
 ## 脚本速查
 
 ```bash

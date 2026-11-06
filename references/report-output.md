@@ -75,3 +75,16 @@ python scripts/render_report.py --input output/qualification.json --output outpu
 ```
 
 返回：JSON 路径、HTML 路径、Markdown 路径，以及企业全称映射与数据口径摘要。
+
+## AI 内容审校清单（资质）
+
+| 检查项 | 原值示例 | 允许的规范动作 | 证据位置 |
+| --- | --- | --- | --- |
+| 重复指标 | 两张 `近一年获证` | 保留一张，合并 delta/hint | `metrics` |
+| 高新有效性 | 5 条中 1 条状态“有效” | 写“有效 1、已过期/失效 4”，不把未知算无效 | `hitech_records[].证书状态/截止日期` |
+| 临近到期 | 截止日期距报告日 ≤90 天 | 标“有效（YYYY-MM-DD 到期，临近）” | `hitech_records[].截止日期` |
+| 类别覆盖 | 76 类全量拼接 | 摘要列前 12 类 + “等 N 类”，完整清单留 KV | `cert_profile.涵盖证书类别` |
+| 类别口径 | `资质类别数 4` vs `资质类别聚类 1` | 分别说明来源类别/聚类类别，不合并 | `category_dist`、`class_cluster` |
+| 结论边界 | “便于招投标/补贴申报” | 改为“供资质核验参考，不构成资格结论” | `abstract` |
+
+离线修订入口：`compose_report.py::apply_content_review(report)`。正常生成（`build_payload` / CLI 非 `--dry-run`）已在组装阶段自动执行同一审校，证书有效性按报告生成时间判定；离线入口只读报告已有字段，不查 MCP；修正项写入 `data_source.content_review.corrections`，重复处理保留既有修正记录，过期证书保留。
